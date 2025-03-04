@@ -1,0 +1,1 @@
+import{r as s,j as l,c as n,P as e}from"./index-DPuNUjLg.js";const x={type:e.string,tooltip:e.bool,as:e.elementType},a=s.forwardRef(({as:o="div",className:t,type:p="valid",tooltip:r=!1,...c},i)=>l.jsx(o,{...c,ref:i,className:n(t,`${p}-${r?"tooltip":"feedback"}`)}));a.displayName="Feedback";a.propTypes=x;const m=s.createContext({});export{a as F,m as a};

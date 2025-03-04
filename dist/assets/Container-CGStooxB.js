@@ -1,0 +1,1 @@
+import{r as f,u as x,j as c,c as p}from"./index-DPuNUjLg.js";const m=f.forwardRef(({bsPrefix:a,fluid:s=!1,as:t="div",className:e,...o},n)=>{const r=x(a,"container"),i=typeof s=="string"?`-${s}`:"-fluid";return c.jsx(t,{ref:n,...o,className:p(e,s?`${r}${i}`:r)})});m.displayName="Container";export{m as C};

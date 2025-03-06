@@ -40,10 +40,18 @@ const ServiceCreate = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [days, setDays] = useState([""]);
+  const [availableDays, setAvailableDays] = useState("Mon-Fri"); // Default value for dropdown
   const cropperRef = useRef(null);
 
   const bannerAspectRatio = 123 / 137;
+
+  // Predefined options for available days
+  const daysOptions = [
+    { label: "Monday to Friday", value: "Mon-Fri" },
+    { label: "Monday to Saturday", value: "Mon-Sat" },
+    { label: "Everyday", value: "Everyday" },
+    { label: "Custom", value: "Custom" }, // Add custom logic if needed
+  ];
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -89,21 +97,6 @@ const ServiceCreate = () => {
     }
   };
 
-  const addDaysField = () => {
-    setDays([...days, ""]);
-  };
-
-  const removeDaysField = (index) => {
-    const updatedDays = days.filter((_, i) => i !== index);
-    setDays(updatedDays);
-  };
-
-  const updateDaysField = (index, value) => {
-    const updatedDays = [...days];
-    updatedDays[index] = value;
-    setDays(updatedDays);
-  };
-
   const handleUpload = async () => {
     if (!croppedImage) {
       setToastMessage("Please crop the image first.");
@@ -111,23 +104,20 @@ const ServiceCreate = () => {
       return;
     }
 
-    if (!title || !place || !startTime || !endTime || !phoneNumber || days.length === 0) {
+    if (
+      !title ||
+      !place ||
+      !startTime ||
+      !endTime ||
+      !phoneNumber ||
+      !availableDays
+    ) {
       setToastMessage("Please fill all required fields.");
       setShowToast(true);
       return;
     }
 
     setIsLoading(true);
-
-    const formatTime = (time) => {
-      const [hours, minutes] = time.split(":");
-      const parsedHours = parseInt(hours, 10);
-      const ampm = parsedHours >= 12 ? "PM" : "AM";
-      const formattedHours = parsedHours % 12 || 12;
-      return `${formattedHours}:${minutes} ${ampm}`;
-    };
-
-    const timing = `${formatTime(startTime)} - ${formatTime(endTime)}`;
 
     const fileName = `service-image-${Date.now()}.png`;
     const file = new File([croppedImage], fileName, { type: "image/png" });
@@ -136,9 +126,10 @@ const ServiceCreate = () => {
     formData.append("image", file);
     formData.append("title", title);
     formData.append("location", place);
-    formData.append("availableTime", timing);
+    formData.append("startingTime", startTime); // Use startingTime
+    formData.append("stoppingTime", endTime); // Use stoppingTime
     formData.append("phoneNumber", phoneNumber);
-    formData.append("availableDays", JSON.stringify(days.filter((day) => day.trim() !== "")));
+    formData.append("availableDays", availableDays); // Use selected availableDays
 
     const logFormData = (formData) => {
       const data = {};
@@ -170,7 +161,9 @@ const ServiceCreate = () => {
     } catch (error) {
       console.error("Error creating service:", error);
       if (error.response) {
-        setToastMessage(error.response.data.message || "Failed to create service.");
+        setToastMessage(
+          error.response.data.message || "Failed to create service."
+        );
       } else if (error.request) {
         setToastMessage("Network error. Please check your connection.");
       } else {
@@ -235,22 +228,49 @@ const ServiceCreate = () => {
                       <Card>
                         <CardBody>
                           <div className="d-flex gap-2 flex-wrap">
-                            <Button onClick={() => cropperRef.current?.cropper.zoom(0.1)}>
-                              <IconifyIcon icon="mdi:magnify-plus-outline" /> Zoom In
+                            <Button
+                              onClick={() =>
+                                cropperRef.current?.cropper.zoom(0.1)
+                              }
+                            >
+                              <IconifyIcon icon="mdi:magnify-plus-outline" />{" "}
+                              Zoom In
                             </Button>
-                            <Button onClick={() => cropperRef.current?.cropper.zoom(-0.1)}>
-                              <IconifyIcon icon="mdi:magnify-minus-outline" /> Zoom Out
+                            <Button
+                              onClick={() =>
+                                cropperRef.current?.cropper.zoom(-0.1)
+                              }
+                            >
+                              <IconifyIcon icon="mdi:magnify-minus-outline" />{" "}
+                              Zoom Out
                             </Button>
-                            <Button onClick={() => cropperRef.current?.cropper.rotate(-45)}>
+                            <Button
+                              onClick={() =>
+                                cropperRef.current?.cropper.rotate(-45)
+                              }
+                            >
                               <IconifyIcon icon="mdi:rotate-left" /> Rotate Left
                             </Button>
-                            <Button onClick={() => cropperRef.current?.cropper.rotate(45)}>
-                              <IconifyIcon icon="mdi:rotate-right" /> Rotate Right
+                            <Button
+                              onClick={() =>
+                                cropperRef.current?.cropper.rotate(45)
+                              }
+                            >
+                              <IconifyIcon icon="mdi:rotate-right" /> Rotate
+                              Right
                             </Button>
-                            <Button onClick={() => cropperRef.current?.cropper.reset()}>
+                            <Button
+                              onClick={() =>
+                                cropperRef.current?.cropper.reset()
+                              }
+                            >
                               <IconifyIcon icon="mdi:sync" /> Reset
                             </Button>
-                            <Button onClick={() => cropperRef.current?.cropper.clear()}>
+                            <Button
+                              onClick={() =>
+                                cropperRef.current?.cropper.clear()
+                              }
+                            >
                               <IconifyIcon icon="mdi:close" /> Clear
                             </Button>
                           </div>
@@ -310,27 +330,17 @@ const ServiceCreate = () => {
                   </Form.Group>
 
                   <Form.Group className="mb-3">
-                    <Form.Label>Days</Form.Label>
-                    {days.map((day, index) => (
-                      <div key={index} className="d-flex align-items-center mb-2">
-                        <Form.Control
-                          type="text"
-                          value={day}
-                          onChange={(e) => updateDaysField(index, e.target.value)}
-                          placeholder={`Day ${index + 1}`}
-                        />
-                        <Button
-                          variant="danger"
-                          className="ms-2"
-                          onClick={() => removeDaysField(index)}
-                        >
-                          <IconifyIcon icon="mdi:delete" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button variant="secondary" className="w-100" onClick={addDaysField}>
-                      <IconifyIcon icon="mdi:plus" /> Add Day
-                    </Button>
+                    <Form.Label>Available Days</Form.Label>
+                    <Form.Select
+                      value={availableDays}
+                      onChange={(e) => setAvailableDays(e.target.value)}
+                    >
+                      {daysOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </Form.Select>
                   </Form.Group>
 
                   <Button

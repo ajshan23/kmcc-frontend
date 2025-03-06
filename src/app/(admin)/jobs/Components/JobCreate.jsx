@@ -36,6 +36,10 @@ const JobCreate = () => {
   const [benefits, setBenefits] = useState([{ heading: "", description: "" }]); // State for benefits
   const [isLoading, setIsLoading] = useState(false); // State for loading state
 
+  // Predefined list of benefit headings
+  const predefinedHeadings = ["Medical", "Time Off", "Flexible Hours", "Remote Work", "Bonuses"];
+  const [availableHeadings, setAvailableHeadings] = useState(predefinedHeadings); // State for available headings
+
   const cropperRef = useRef(null);
 
   // Fixed aspect ratio for job image (200x200)
@@ -109,14 +113,32 @@ const JobCreate = () => {
 
   // Handle removing a benefit field
   const removeBenefitsField = (index) => {
-    const updatedBenefits = benefits.filter((_, i) => i !== index);
-    setBenefits(updatedBenefits);
+    const removedBenefit = benefits[index];
+    setBenefits(benefits.filter((_, i) => i !== index));
+
+    // Add the removed heading back to availableHeadings if it was predefined
+    if (predefinedHeadings.includes(removedBenefit.heading)) {
+      setAvailableHeadings([...availableHeadings, removedBenefit.heading]);
+    }
   };
 
   // Handle updating a benefit field
   const updateBenefitsField = (index, field, value) => {
     const updatedBenefits = [...benefits];
+    const previousHeading = updatedBenefits[index].heading;
+
     updatedBenefits[index] = { ...updatedBenefits[index], [field]: value };
+
+    // If the heading is updated, update availableHeadings
+    if (field === "heading") {
+      if (predefinedHeadings.includes(previousHeading)) {
+        setAvailableHeadings([...availableHeadings, previousHeading]);
+      }
+      if (predefinedHeadings.includes(value)) {
+        setAvailableHeadings(availableHeadings.filter((h) => h !== value));
+      }
+    }
+
     setBenefits(updatedBenefits);
   };
 
@@ -459,7 +481,7 @@ const JobCreate = () => {
                     {benefits.map((benefit, index) => (
                       <div key={index} className="mb-2 p-2 border rounded">
                         <Form.Control
-                          type="text"
+                          as="select"
                           value={benefit.heading}
                           onChange={(e) =>
                             updateBenefitsField(
@@ -468,9 +490,15 @@ const JobCreate = () => {
                               e.target.value
                             )
                           }
-                          placeholder="Benefit Heading"
                           className="mb-2"
-                        />
+                        >
+                          <option value="">Select a benefit</option>
+                          {availableHeadings.map((heading) => (
+                            <option key={heading} value={heading}>
+                              {heading}
+                            </option>
+                          ))}
+                        </Form.Control>
                         <Form.Control
                           type="text"
                           value={benefit.description}

@@ -30,6 +30,8 @@ const Service = () => {
         const response = await axiosInstance.get("/services");
         if (response.status === 200) {
           setServices(response.data.data.services); // Set the fetched services to state
+          console.log(services);
+          
         }
       } catch (error) {
         console.error("Error fetching services:", error);
@@ -159,7 +161,9 @@ const Service = () => {
                               {service.location}
                             </td>
                             <td style={{ verticalAlign: "middle" }}>
-                              {service.availableTime}
+                              {service.startingTime +
+                                "-" +
+                                service.stoppingTime}
                             </td>
                             <td style={{ verticalAlign: "middle" }}>
                               {service.phoneNumber}

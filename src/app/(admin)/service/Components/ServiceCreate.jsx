@@ -10,48 +10,72 @@ import {
   Toast,
   ToastHeader,
   ToastBody,
+  Spinner,
 } from "react-bootstrap";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
 import "cropperjs/dist/cropper.css";
 import axiosInstance from "../../../../globalFetch/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import PageTitle from "../../../../components/PageTitle";
 import smLogo from "@/assets/images/logo-sm.png";
 
-const ServiceCreate = () => {
+const ServiceForm = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [imageSrc, setImageSrc] = useState(null);
-  const [cropData, setCropData] = useState({
-    cropX: 0,
-    cropY: 0,
-    imageWidth: 0,
-    imageHeight: 0,
-    imageRotate: 0,
-    scaleX: 0,
-    scaleY: 0,
-  });
   const [croppedImage, setCroppedImage] = useState(null);
   const [title, setTitle] = useState("");
-  const [place, setPlace] = useState("");
+  const [location, setLocation] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [availableDays, setAvailableDays] = useState("Mon-Fri"); // Default value for dropdown
+  const [startingTime, setStartingTime] = useState("");
+  const [stoppingTime, setStoppingTime] = useState("");
+  const [availableDays, setAvailableDays] = useState("Mon-Fri");
   const cropperRef = useRef(null);
 
   const bannerAspectRatio = 123 / 137;
 
-  // Predefined options for available days
   const daysOptions = [
     { label: "Monday to Friday", value: "Mon-Fri" },
     { label: "Monday to Saturday", value: "Mon-Sat" },
     { label: "Everyday", value: "Everyday" },
-    { label: "Custom", value: "Custom" }, // Add custom logic if needed
+    { label: "Custom", value: "Custom" },
   ];
+
+  useEffect(() => {
+    if (id) {
+      setIsEditing(true);
+      fetchService();
+    }
+  }, [id]);
+
+  const fetchService = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axiosInstance.get(`/services/${id}`);
+      const service = response.data.data;
+
+      setTitle(service.title);
+      setLocation(service.location);
+      setPhoneNumber(service.phoneNumber);
+      setStartingTime(service.startingTime);
+      setStoppingTime(service.stoppingTime);
+      setAvailableDays(service.availableDays);
+      if (service.image) {
+        setImageSrc(service.image);
+      }
+    } catch (error) {
+      console.error("Error fetching service:", error);
+      setToastMessage("Failed to load service data");
+      setShowToast(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -59,12 +83,6 @@ const ServiceCreate = () => {
 
     if (!file.type.startsWith("image/")) {
       setToastMessage("Please upload a valid image file.");
-      setShowToast(true);
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setToastMessage("File size must be less than 5MB.");
       setShowToast(true);
       return;
     }
@@ -79,37 +97,18 @@ const ServiceCreate = () => {
   const onCrop = () => {
     const cropper = cropperRef.current?.cropper;
     if (cropper) {
-      const data = cropper.getData();
-      const imageData = cropper.getImageData();
-      setCropData({
-        cropX: Math.ceil(data.x),
-        cropY: Math.ceil(data.y),
-        imageWidth: Math.ceil(imageData.width),
-        imageHeight: Math.ceil(imageData.height),
-        imageRotate: Math.ceil(imageData.rotate),
-        scaleX: Math.ceil(imageData.scaleX),
-        scaleY: Math.ceil(imageData.scaleY),
-      });
-
       cropper.getCroppedCanvas().toBlob((blob) => {
         setCroppedImage(blob);
       });
     }
   };
 
-  const handleUpload = async () => {
-    if (!croppedImage) {
-      setToastMessage("Please crop the image first.");
-      setShowToast(true);
-      return;
-    }
-
+  const handleSubmit = async () => {
     if (
       !title ||
-      !place ||
-      !startTime ||
-      !endTime ||
-      !phoneNumber ||
+      !location ||
+      !startingTime ||
+      !stoppingTime ||
       !availableDays
     ) {
       setToastMessage("Please fill all required fields.");
@@ -119,56 +118,52 @@ const ServiceCreate = () => {
 
     setIsLoading(true);
 
-    const fileName = `service-image-${Date.now()}.png`;
-    const file = new File([croppedImage], fileName, { type: "image/png" });
-
     const formData = new FormData();
-    formData.append("image", file);
     formData.append("title", title);
-    formData.append("location", place);
-    formData.append("startingTime", startTime); // Use startingTime
-    formData.append("stoppingTime", endTime); // Use stoppingTime
+    formData.append("location", location);
+    formData.append("startingTime", startingTime);
+    formData.append("stoppingTime", stoppingTime);
+    formData.append("availableDays", availableDays);
     formData.append("phoneNumber", phoneNumber);
-    formData.append("availableDays", availableDays); // Use selected availableDays
 
-    const logFormData = (formData) => {
-      const data = {};
-      for (let [key, value] of formData.entries()) {
-        data[key] = value;
-      }
-      console.log(data);
-    };
-
-    logFormData(formData);
+    if (croppedImage) {
+      const fileName = `service-image-${Date.now()}.png`;
+      const file = new File([croppedImage], fileName, { type: "image/png" });
+      formData.append("image", file);
+    }
 
     try {
-      const response = await axiosInstance.post("/services/new", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      let response;
+      if (isEditing) {
+        response = await axiosInstance.put(`/services/${id}`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      } else {
+        response = await axiosInstance.post("/services/new", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      }
 
-      if (response.status === 201) {
-        setToastMessage("Service created successfully!");
+      if (response.status === 200 || response.status === 201) {
+        setToastMessage(
+          isEditing
+            ? "Service updated successfully!"
+            : "Service created successfully!"
+        );
         setShowToast(true);
         setTimeout(() => {
           navigate("/service");
         }, 2000);
-      } else {
-        setToastMessage("Failed to create service.");
-        setShowToast(true);
       }
     } catch (error) {
-      console.error("Error creating service:", error);
-      if (error.response) {
-        setToastMessage(
-          error.response.data.message || "Failed to create service."
-        );
-      } else if (error.request) {
-        setToastMessage("Network error. Please check your connection.");
-      } else {
-        setToastMessage("An unexpected error occurred.");
-      }
+      console.error("Error saving service:", error);
+      setToastMessage(
+        isEditing ? "Failed to update service." : "Failed to create service."
+      );
       setShowToast(true);
     } finally {
       setIsLoading(false);
@@ -177,7 +172,7 @@ const ServiceCreate = () => {
 
   return (
     <>
-      <PageTitle title="New service" />
+      <PageTitle title={isEditing ? "Edit Service" : "New Service"} />
 
       <Toast
         onClose={() => setShowToast(false)}
@@ -200,7 +195,7 @@ const ServiceCreate = () => {
               <Row>
                 <Col lg={9}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Upload Service Image (123x137)</Form.Label>
+                    <Form.Label>Service Image (123x137)</Form.Label>
                     <Form.Control
                       type="file"
                       accept="image/*"
@@ -282,7 +277,7 @@ const ServiceCreate = () => {
 
                 <Col lg={3}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Service Title</Form.Label>
+                    <Form.Label>Service Title*</Form.Label>
                     <Form.Control
                       type="text"
                       value={title}
@@ -292,45 +287,35 @@ const ServiceCreate = () => {
                   </Form.Group>
 
                   <Form.Group className="mb-3">
-                    <Form.Label>Place</Form.Label>
+                    <Form.Label>Location*</Form.Label>
                     <Form.Control
                       type="text"
-                      value={place}
-                      onChange={(e) => setPlace(e.target.value)}
-                      placeholder="Enter service place"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="Enter service location"
                     />
                   </Form.Group>
 
                   <Form.Group className="mb-3">
-                    <Form.Label>Start Time</Form.Label>
+                    <Form.Label>Start Time*</Form.Label>
                     <Form.Control
                       type="time"
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
+                      value={startingTime}
+                      onChange={(e) => setStartingTime(e.target.value)}
                     />
                   </Form.Group>
 
                   <Form.Group className="mb-3">
-                    <Form.Label>End Time</Form.Label>
+                    <Form.Label>End Time*</Form.Label>
                     <Form.Control
                       type="time"
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
+                      value={stoppingTime}
+                      onChange={(e) => setStoppingTime(e.target.value)}
                     />
                   </Form.Group>
 
                   <Form.Group className="mb-3">
-                    <Form.Label>Phone Number</Form.Label>
-                    <Form.Control
-                      type="number"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="Enter phone number"
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Available Days</Form.Label>
+                    <Form.Label>Available Days*</Form.Label>
                     <Form.Select
                       value={availableDays}
                       onChange={(e) => setAvailableDays(e.target.value)}
@@ -343,14 +328,45 @@ const ServiceCreate = () => {
                     </Form.Select>
                   </Form.Group>
 
-                  <Button
-                    variant="primary"
-                    className="w-100 mt-3"
-                    onClick={handleUpload}
-                    disabled={!croppedImage || isLoading}
-                  >
-                    {isLoading ? "Creating..." : "Create Service"}
-                  </Button>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Phone Number</Form.Label>
+                    <Form.Control
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="Enter phone number"
+                    />
+                  </Form.Group>
+
+                  <div className="d-grid gap-2">
+                    <Button
+                      variant="primary"
+                      onClick={handleSubmit}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <Spinner
+                          as="span"
+                          animation="border"
+                          size="sm"
+                          role="status"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <IconifyIcon
+                          icon={isEditing ? "mdi:content-save" : "mdi:plus"}
+                          className="me-2"
+                        />
+                      )}
+                      {isEditing ? "Update Service" : "Create Service"}
+                    </Button>
+                    <Button
+                      variant="outline-secondary"
+                      onClick={() => navigate("/service")}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 </Col>
               </Row>
             </CardBody>
@@ -361,4 +377,4 @@ const ServiceCreate = () => {
   );
 };
 
-export default ServiceCreate;
+export default ServiceForm;

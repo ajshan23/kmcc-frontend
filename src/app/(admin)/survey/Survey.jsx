@@ -52,7 +52,9 @@ const Survey = () => {
     if (!selectedSurveyId) return;
 
     try {
-      const response = await axiosInstance.delete(`/survey/${selectedSurveyId}`);
+      const response = await axiosInstance.delete(
+        `/survey/${selectedSurveyId}`
+      );
       if (response.status === 200) {
         setSurvey((prevSurveys) =>
           prevSurveys.filter((srvy) => srvy.id !== selectedSurveyId)
@@ -89,7 +91,10 @@ const Survey = () => {
 
       <Row>
         <Col xs={12}>
-          <div className="p-3 bg-white border rounded" style={{ width: "70vw" }}>
+          <div
+            className="p-3 bg-white border rounded"
+            style={{ width: "70vw" }}
+          >
             <Row className="d-flex justify-content-between align-items-center p-2">
               <Col xs="auto">
                 <input
@@ -100,14 +105,25 @@ const Survey = () => {
                 />
               </Col>
               <Col xs="auto">
-                <Button variant="dark" as={Link} to="/survey/new" style={{ padding: "10px 20px", borderRadius: 10 }}>
+                <Button
+                  variant="dark"
+                  as={Link}
+                  to="/survey/new"
+                  style={{ padding: "10px 20px", borderRadius: 10 }}
+                >
                   New Survey
                 </Button>
               </Col>
             </Row>
 
             <div className="table-responsive">
-              <Table striped bordered hover responsive className="mt-3 text-center">
+              <Table
+                striped
+                bordered
+                hover
+                responsive
+                className="mt-3 text-center"
+              >
                 <thead>
                   <tr>
                     <th style={{ textAlign: "center" }}>Title</th>
@@ -120,12 +136,18 @@ const Survey = () => {
                   {survey.map((srvy, idx) => (
                     <tr key={idx}>
                       <td style={{ verticalAlign: "middle" }}>{srvy.title}</td>
-                      <td style={{ verticalAlign: "middle" }}>{srvy.description || 'N/A'}</td>
+                      <td style={{ verticalAlign: "middle" }}>
+                        {srvy.description || "N/A"}
+                      </td>
                       <td>
                         <Button
                           className="m-2"
                           variant="light"
-                          style={{ backgroundColor: 'white', padding: "5px 20px", borderRadius: 10 }}
+                          style={{
+                            backgroundColor: "white",
+                            padding: "5px 20px",
+                            borderRadius: 10,
+                          }}
                           as={Link}
                           to={`/questions/${srvy.id}`}
                         >
@@ -133,7 +155,11 @@ const Survey = () => {
                         </Button>
                         <Button
                           variant="light"
-                          style={{ backgroundColor: 'white', padding: "5px 20px", borderRadius: 10 }}
+                          style={{
+                            backgroundColor: "white",
+                            padding: "5px 20px",
+                            borderRadius: 10,
+                          }}
                           as={Link}
                           to={`/add/questions/${srvy.id}`}
                         >
@@ -142,10 +168,21 @@ const Survey = () => {
                       </td>
                       <td style={{ verticalAlign: "middle" }}>
                         <Button
+                          variant="info"
+                          className="me-2"
+                          as={Link}
+                          to={`/survey/answers/${srvy.id}`}
+                        >
+                          <IconifyIcon color="white" icon="mdi:eye-outline" />
+                        </Button>
+                        <Button
                           variant="danger"
                           onClick={() => handleDeleteClick(srvy.id)}
                         >
-                          <IconifyIcon color="white" icon="ri:delete-bin-4-fill" />
+                          <IconifyIcon
+                            color="white"
+                            icon="ri:delete-bin-4-fill"
+                          />
                         </Button>
                       </td>
                     </tr>
@@ -162,7 +199,8 @@ const Survey = () => {
           <Modal.Title>Delete Survey</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Are you sure you want to delete this survey? This action cannot be undone.
+          Are you sure you want to delete this survey? This action cannot be
+          undone.
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleDeleteModalClose}>

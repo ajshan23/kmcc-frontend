@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+// AirportForm.js
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Card,
   CardBody,
@@ -16,7 +17,9 @@ import PageTitle from "../../../../components/PageTitle";
 import smLogo from "@/assets/images/logo-sm.png";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
 
-const AirportCreate = () => {
+const AirportForm = () => {
+  const { id } = useParams();
+  const isEditMode = Boolean(id);
   const navigate = useNavigate();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -27,7 +30,29 @@ const AirportCreate = () => {
   const [code, setCode] = useState("");
   const [country, setCountry] = useState("");
 
-  const handleUpload = async () => {
+  useEffect(() => {
+    if (isEditMode) {
+      const fetchAirport = async () => {
+        try {
+          const response = await axiosInstance.get(`/airport/${id}`);
+          if (response.status === 200) {
+            const airport = response.data.data || response.data;
+            setName(airport.name);
+            setCode(airport.iataCode);
+            setCountry(airport.country);
+          }
+        } catch (error) {
+          console.error("Error fetching airport:", error);
+          setToastMessage("Failed to load airport data.");
+          setToastVariant("danger");
+          setShowToast(true);
+        }
+      };
+      fetchAirport();
+    }
+  }, [id, isEditMode]);
+
+  const handleSubmit = async () => {
     if (!name || !code || !country) {
       setToastMessage("All fields (name, code, country) are required");
       setToastVariant("danger");
@@ -39,18 +64,29 @@ const AirportCreate = () => {
     const formData = { name, code, country };
 
     try {
-      const response = await axiosInstance.post("/airport", formData);
+      let response;
+      if (isEditMode) {
+        response = await axiosInstance.put(`/airport/${id}`, formData);
+      } else {
+        response = await axiosInstance.post("/airport", formData);
+      }
 
-      if (response.status === 201) {
-        setToastMessage("Airport added successfully.");
+      if (response.status === (isEditMode ? 200 : 201)) {
+        setToastMessage(
+          `Airport ${isEditMode ? "updated" : "created"} successfully!`
+        );
         setToastVariant("success");
         setShowToast(true);
         setTimeout(() => navigate("/airport"), 2000);
       }
     } catch (error) {
-      console.error("Error uploading airport:", error);
+      console.error(
+        `Error ${isEditMode ? "updating" : "creating"} airport:`,
+        error
+      );
       setToastMessage(
-        error.response?.data?.message || "Failed to add airport."
+        error.response?.data?.message ||
+          `Failed to ${isEditMode ? "update" : "create"} airport.`
       );
       setToastVariant("danger");
       setShowToast(true);
@@ -61,14 +97,13 @@ const AirportCreate = () => {
 
   return (
     <>
-      <PageTitle title="New Airport" />
+      <PageTitle title={isEditMode ? "Edit Airport" : "New Airport"} />
       <Toast
         onClose={() => setShowToast(false)}
         show={showToast}
         delay={3000}
         autohide
         style={{ position: "fixed", top: 20, right: 20, zIndex: 9999 }}
-  
       >
         <ToastHeader>
           <img src={smLogo} alt="brand-logo" height="16" className="me-1" />
@@ -99,7 +134,7 @@ const AirportCreate = () => {
                     type="text"
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    placeholder="Enter airport code"
+                    placeholder="Enter airport code (IATA)"
                     disabled={loading}
                   />
                 </Form.Group>
@@ -118,11 +153,26 @@ const AirportCreate = () => {
                 <Button
                   variant="primary"
                   className="w-100 mt-3"
-                  onClick={handleUpload}
+                  onClick={handleSubmit}
                   disabled={loading}
                 >
-                  <IconifyIcon icon="mdi:upload" />{" "}
-                  {loading ? "Creating..." : "Create Airport"}
+                  {loading ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      ></span>
+                      {isEditMode ? "Updating..." : "Creating..."}
+                    </>
+                  ) : (
+                    <>
+                      <IconifyIcon
+                        icon={isEditMode ? "mdi:pencil" : "mdi:plus"}
+                      />{" "}
+                      {isEditMode ? "Update Airport" : "Create Airport"}
+                    </>
+                  )}
                 </Button>
               </Row>
             </CardBody>
@@ -133,4 +183,4 @@ const AirportCreate = () => {
   );
 };
 
-export default AirportCreate;
+export default AirportForm;

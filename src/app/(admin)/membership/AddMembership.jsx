@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Card,
   CardBody,
@@ -16,22 +16,65 @@ import PageTitle from "../../../components/PageTitle";
 import smLogo from "@/assets/images/logo-sm.png";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
 
-const AddMembership = () => {
+const MembershipForm = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastVariant, setToastVariant] = useState("success");
   const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const [memberId, setMemberId] = useState("");
-  const [iqamaNumber, setIqamaNumber] = useState("");
-  const [name, setName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [status, setStatus] = useState("active");
-  const [areaName, setAreaName] = useState("");
+  const [formData, setFormData] = useState({
+    memberId: "",
+    iqamaNumber: "",
+    name: "",
+    phoneNumber: "",
+    status: "active",
+    areaName: "",
+  });
+
+  useEffect(() => {
+    if (id) {
+      const fetchMembership = async () => {
+        setLoading(true);
+        try {
+          const response = await axiosInstance.get(`/admin/memberships/${id}`);
+          if (response.status === 200) {
+            setFormData({
+              memberId: response.data.data.memberId,
+              iqamaNumber: response.data.data.iqamaNumber,
+              name: response.data.data.name,
+              phoneNumber: response.data.data.phoneNumber || "",
+              status: response.data.data.status,
+              areaName: response.data.data.areaName || "",
+            });
+            setIsEditing(true);
+          }
+        } catch (error) {
+          console.error("Error fetching membership:", error);
+          setToastMessage("Failed to load membership data.");
+          setToastVariant("danger");
+          setShowToast(true);
+          navigate("/membership");
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchMembership();
+    }
+  }, [id, navigate]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const handleSubmit = async () => {
-    if (!memberId || !iqamaNumber || !name) {
+    if (!formData.memberId || !formData.iqamaNumber || !formData.name) {
       setToastMessage("Member ID, Iqama Number, and Name are required.");
       setToastVariant("danger");
       setShowToast(true);
@@ -39,31 +82,33 @@ const AddMembership = () => {
     }
 
     setLoading(true);
-    const formData = {
-      memberId,
-      iqamaNumber,
-      name,
-      phoneNumber,
-      status,
-      areaName,
-    };
 
     try {
-      const response = await axiosInstance.post(
-        "/admin/add-membership",
-        formData
-      );
+      let response;
+      if (isEditing) {
+        response = await axiosInstance.put(
+          `/admin/memberships/${id}`,
+          formData
+        );
+      } else {
+        response = await axiosInstance.post("/admin/memberships", formData);
+      }
 
-      if (response.status === 201) {
-        setToastMessage("Membership added successfully.");
+      if (response.status === 200 || response.status === 201) {
+        setToastMessage(
+          isEditing
+            ? "Membership updated successfully."
+            : "Membership added successfully."
+        );
         setToastVariant("success");
         setShowToast(true);
         setTimeout(() => navigate("/membership"), 2000);
       }
     } catch (error) {
-      console.error("Error adding membership:", error);
+      console.error("Error:", error);
       setToastMessage(
-        error.response?.data?.message || "Failed to add membership."
+        error.response?.data?.message ||
+          `Failed to ${isEditing ? "update" : "add"} membership.`
       );
       setToastVariant("danger");
       setShowToast(true);
@@ -74,7 +119,7 @@ const AddMembership = () => {
 
   return (
     <>
-      <PageTitle title="New Membership" />
+      <PageTitle title={isEditing ? "Edit Membership" : "New Membership"} />
       <Toast
         onClose={() => setShowToast(false)}
         show={showToast}
@@ -98,8 +143,9 @@ const AddMembership = () => {
                   <Form.Label>Member ID</Form.Label>
                   <Form.Control
                     type="text"
-                    value={memberId}
-                    onChange={(e) => setMemberId(e.target.value)}
+                    name="memberId"
+                    value={formData.memberId}
+                    onChange={handleChange}
                     placeholder="Enter Member ID"
                     disabled={loading}
                   />
@@ -109,8 +155,9 @@ const AddMembership = () => {
                   <Form.Label>Iqama Number</Form.Label>
                   <Form.Control
                     type="text"
-                    value={iqamaNumber}
-                    onChange={(e) => setIqamaNumber(e.target.value)}
+                    name="iqamaNumber"
+                    value={formData.iqamaNumber}
+                    onChange={handleChange}
                     placeholder="Enter Iqama Number"
                     disabled={loading}
                   />
@@ -120,8 +167,9 @@ const AddMembership = () => {
                   <Form.Label>Name</Form.Label>
                   <Form.Control
                     type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
                     placeholder="Enter Name"
                     disabled={loading}
                   />
@@ -131,8 +179,9 @@ const AddMembership = () => {
                   <Form.Label>Phone Number</Form.Label>
                   <Form.Control
                     type="text"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={handleChange}
                     placeholder="Enter Phone Number"
                     disabled={loading}
                   />
@@ -141,8 +190,9 @@ const AddMembership = () => {
                 <Form.Group className="mb-3">
                   <Form.Label>Status</Form.Label>
                   <Form.Select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
                     disabled={loading}
                   >
                     <option value="active">Active</option>
@@ -154,22 +204,40 @@ const AddMembership = () => {
                   <Form.Label>Area Name</Form.Label>
                   <Form.Control
                     type="text"
-                    value={areaName}
-                    onChange={(e) => setAreaName(e.target.value)}
+                    name="areaName"
+                    value={formData.areaName}
+                    onChange={handleChange}
                     placeholder="Enter Area Name"
                     disabled={loading}
                   />
                 </Form.Group>
 
-                <Button
-                  variant="primary"
-                  className="w-100 mt-3"
-                  onClick={handleSubmit}
-                  disabled={loading}
-                >
-                  <IconifyIcon icon="mdi:account-plus" />{" "}
-                  {loading ? "Adding..." : "Add Membership"}
-                </Button>
+                <div className="d-flex gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => navigate("/memberships")}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    className="flex-grow-1"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                  >
+                    <IconifyIcon
+                      icon={isEditing ? "mdi:account-edit" : "mdi:account-plus"}
+                    />{" "}
+                    {loading
+                      ? isEditing
+                        ? "Updating..."
+                        : "Adding..."
+                      : isEditing
+                      ? "Update Membership"
+                      : "Add Membership"}
+                  </Button>
+                </div>
               </Row>
             </CardBody>
           </Card>
@@ -179,4 +247,4 @@ const AddMembership = () => {
   );
 };
 
-export default AddMembership;
+export default MembershipForm;

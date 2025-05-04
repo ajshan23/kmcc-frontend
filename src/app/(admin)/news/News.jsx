@@ -1,3 +1,4 @@
+// News.js
 import PageTitle from "../../../components/PageTitle";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -12,7 +13,7 @@ import {
   ToastBody,
 } from "react-bootstrap";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
-import smLogo from "@/assets/images/logo-sm.png"; // Import the logo for the toast
+import smLogo from "@/assets/images/logo-sm.png";
 
 const News = () => {
   const [news, setNews] = useState([]);
@@ -171,13 +172,19 @@ const News = () => {
                       <td style={{ verticalAlign: "middle" }}>
                         <Button
                           type="button"
+                          variant="primary"
+                          className="me-2"
+                          as={Link}
+                          to={`/news/edit/${nws.id}`}
+                        >
+                          <IconifyIcon icon="mdi:pencil" />
+                        </Button>
+                        <Button
+                          type="button"
                           variant="danger"
                           onClick={() => handleDeleteClick(nws.id)}
                         >
-                          <IconifyIcon
-                            color="white"
-                            icon="ri:delete-bin-4-fill"
-                          />
+                          <IconifyIcon icon="ri:delete-bin-4-fill" />
                         </Button>
                       </td>
                     </tr>

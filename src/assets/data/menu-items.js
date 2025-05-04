@@ -73,6 +73,42 @@ export const MENU_ITEMS = [
     label: "Membership",
     url: "/membership",
   },
+  {
+    key: "Exclusive members",
+    icon: "ri:folder-user-line",
+    label: "Exlcusive Members",
+    url: "/exclusive-members",
+  },
+  {
+    key: "Subwing",
+    icon: "ri:folder-user-line",
+    label: "Sub wing",
+    url: "/sub-wing",
+  },
+  {
+    key: "Gold investment program",
+    icon: "ri:folder-user-line",
+    label: "Gold investment program",
+    url: "/gold-programs",
+  },
+  {
+    key: "Book",
+    icon: "ri:folder-user-line",
+    label: "Book",
+    url: "/book",
+  },
+  {
+    key: "Committee",
+    icon: "ri:folder-user-line",
+    label: "Committee",
+    url: "/constitution-committees",
+  },
+  {
+    key: "Investment",
+    icon: "ri:folder-user-line",
+    label: "Investment",
+    url: "/investments",
+  },
   // {
   //   key: "apps-kanban",
   //   icon: "ri:artboard-line",

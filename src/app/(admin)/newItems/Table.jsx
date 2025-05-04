@@ -1,37 +1,116 @@
-import { useState, useEffect } from 'react';
-import { Card, CardBody, Col, Row } from 'react-bootstrap';
-import PageTitle from '../../../components/PageTitle';
-import fetchWithAuth from '../../../globalFetch/fetch'; // Import the fetch function
-import NoImg from "./assets/no.png"
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import {
+  Button,
+  Card,
+  CardBody,
+  Col,
+  Modal,
+  Row,
+  Toast,
+  Spinner,
+} from "react-bootstrap";
+import PageTitle from "../../../components/PageTitle";
+import axiosInstance from "../../../globalFetch/api";
+import NoImg from "./assets/no.png";
+import { useNavigate } from "react-router-dom";
+import IconifyIcon from "@/components/wrappers/IconifyIcon";
+
 const Table = () => {
   const [users, setUsers] = useState([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const navigate=useNavigate()
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Fetch users
   const fetchUsers = async () => {
     try {
-      const response = await fetchWithAuth(
-        `http://13.203.184.112:3000/api/admin/users?page=${page}&limit=10&search=${search}`
-      );
-      setUsers(response.data.users); // Adjust based on API response
-      setTotalPages(response.data.pagination.totalPages);
+      setLoading(true);
+      const response = await axiosInstance.get("/admin/users", {
+        params: {
+          page,
+          limit: 10,
+          search,
+        },
+      });
+
+      // Access the nested data property
+      setUsers(response.data.data.users);
+      setTotalPages(response.data.data.pagination.totalPages);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error("Error fetching users:", error);
+      setToastMessage(error.response?.data?.message || "Failed to fetch users");
+      setShowToast(true);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Fetch on mount and when page/search changes
   useEffect(() => {
     fetchUsers();
   }, [page, search]);
 
+  const handleDeleteClick = (userId) => {
+    setSelectedUserId(userId);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteModalClose = () => {
+    setShowDeleteModal(false);
+    setSelectedUserId(null);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUserId) return;
+
+    try {
+      await axiosInstance.delete(`/admin/users/${selectedUserId}`);
+
+      setUsers((prevUsers) =>
+        prevUsers.filter((user) => user.id !== selectedUserId)
+      );
+      setToastMessage("User deleted successfully!");
+      setShowToast(true);
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      setToastMessage(error.response?.data?.message || "Failed to delete user");
+      setShowToast(true);
+    } finally {
+      handleDeleteModalClose();
+    }
+  };
+
+  const handleEditClick = (userId, e) => {
+    e.stopPropagation();
+    navigate(`/users/${userId}/edit`);
+  };
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center p-5">
+        <Spinner animation="border" />
+      </div>
+    );
+  }
+
   return (
     <>
       <PageTitle title="Users Table" />
+
+      <Toast
+        onClose={() => setShowToast(false)}
+        show={showToast}
+        delay={5000}
+        autohide
+        style={{ position: "fixed", top: 20, right: 20, zIndex: 9999 }}
+      >
+        <Toast.Body>{toastMessage}</Toast.Body>
+      </Toast>
+
       <Row>
         <Col xs={12}>
           <Card>
@@ -46,80 +125,121 @@ const Table = () => {
                 />
               </div>
 
-              <div className="responsive-table-plugin">
-                <div className="table-rep-plugin">
-                  <div className="table-responsive" data-pattern="priority-columns">
-                    <table id="users-table" className="table table-striped">
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Iqama Number</th>
-                          <th>Member ID</th>
-                          <th>Phone</th>
-                          <th>Profile</th>
+              <div className="table-responsive">
+                <table className="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Iqama Number</th>
+                      <th>Member ID</th>
+                      <th>Phone</th>
+                      <th>Profile</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.length > 0 ? (
+                      users.map((user) => (
+                        <tr
+                          key={user.id}
+                          className="align-middle"
+                          onClick={() => navigate(`/users/${user.id}`)}
+                        >
+                          <td>{user.name}</td>
+                          <td>{user.iqamaNumber}</td>
+                          <td>{user.memberId}</td>
+                          <td>{user.phoneNumber}</td>
+                          <td>
+                            {user.profileImage ? (
+                              <img
+                                src={`data:image/png;base64,${user.profileImage}`}
+                                alt="Profile"
+                                className="rounded-circle"
+                                width="40"
+                                height="40"
+                              />
+                            ) : (
+                              <img
+                                src={NoImg}
+                                alt="Profile"
+                                className="rounded-circle"
+                                width="40"
+                                height="40"
+                              />
+                            )}
+                          </td>
+                          <td>
+                            <Button
+                              variant="primary"
+                              className="me-2"
+                              onClick={(e) => handleEditClick(user.id, e)}
+                            >
+                              <IconifyIcon icon="mdi:pencil" />
+                            </Button>
+                            <Button
+                              variant="danger"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(user.id);
+                              }}
+                            >
+                              <IconifyIcon icon="ri:delete-bin-4-fill" />
+                            </Button>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {users.length > 0 ? (
-                          users.map((user, idx) => (
-                            <tr key={idx} className='align-middle' onClick={()=>navigate(`/users/${user.id}`)}>
-                              <td>{user.name}</td>
-                              <td>{user.iqamaNumber}</td>
-                              <td>{user.memberId}</td>
-                              <td>{user.phoneNumber}</td>
-                              <td >
-                                {user.profileImage ? (
-                                  <img
-                                    src={`data:image/png;base64,${user.profileImage}`}
-                                    alt="Profile"
-                                    style={{ width: 40, height: 40, borderRadius: '50%' }}
-                                  />
-                                ) : (
-                                    <img
-                                    src={NoImg}
-                                    alt="Profile"
-                                    style={{ width: 40, height: 40, borderRadius: '50%' }}
-                                  />
-                            
-                                )}
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan="5" className="text-center">
-                              No users found
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="6" className="text-center">
+                          No users found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
 
-              {/* Pagination Controls */}
               <div className="d-flex justify-content-between mt-3">
-                <button
-                  className="btn btn-primary"
+                <Button
+                  variant="primary"
                   disabled={page <= 1}
                   onClick={() => setPage((prev) => prev - 1)}
                 >
                   Previous
-                </button>
-                <span>Page {page} of {totalPages}</span>
-                <button
-                  className="btn btn-primary"
+                </Button>
+                <span>
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="primary"
                   disabled={page >= totalPages}
                   onClick={() => setPage((prev) => prev + 1)}
                 >
                   Next
-                </button>
+                </Button>
               </div>
             </CardBody>
           </Card>
         </Col>
       </Row>
+
+      <Modal show={showDeleteModal} onHide={handleDeleteModalClose} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Delete User</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete this user? This action cannot be
+          undone.
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleDeleteModalClose}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDeleteUser}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };

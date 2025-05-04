@@ -12,7 +12,7 @@ import {
   ToastBody,
 } from "react-bootstrap";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
-import smLogo from "@/assets/images/logo-sm.png"; // Import the logo for the toast
+import smLogo from "@/assets/images/logo-sm.png";
 
 const ViewMembership = () => {
   const [memberships, setMemberships] = useState([]);
@@ -28,12 +28,15 @@ const ViewMembership = () => {
     totalPages: 1,
   });
 
-  // Fetch memberships from the backend
   useEffect(() => {
     const fetchMemberships = async () => {
       try {
         const response = await axiosInstance.get("/admin/see", {
-          params: { search: searchTerm, page: pagination.page, limit: pagination.limit },
+          params: {
+            search: searchTerm,
+            page: pagination.page,
+            limit: pagination.limit,
+          },
         });
         if (response.status === 200) {
           setMemberships(response.data.data.memberships);
@@ -51,19 +54,19 @@ const ViewMembership = () => {
     fetchMemberships();
   }, [searchTerm, pagination.page, pagination.limit]);
 
-  // Handle delete click
   const handleDeleteClick = (membership) => {
     setSelectedMembership(membership);
     setShowModal(true);
   };
 
-  // Handle delete membership
   const handleDeleteMembership = async () => {
     if (!selectedMembership) return;
     try {
-      await axiosInstance.delete(`/memberships/${selectedMembership.id}`);
+      await axiosInstance.delete(`/admin/memberships/${selectedMembership.id}`);
       setMemberships((prevMemberships) =>
-        prevMemberships.filter((membership) => membership.id !== selectedMembership.id)
+        prevMemberships.filter(
+          (membership) => membership.id !== selectedMembership.id
+        )
       );
       setToastMessage("Membership deleted successfully!");
       setShowToast(true);
@@ -77,7 +80,6 @@ const ViewMembership = () => {
     }
   };
 
-  // Handle pagination change
   const handlePageChange = (newPage) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
   };
@@ -86,7 +88,6 @@ const ViewMembership = () => {
     <div className="d-flex p-4">
       <PageTitle title="Memberships" />
 
-      {/* Toast Notification */}
       <Toast
         onClose={() => setShowToast(false)}
         show={showToast}
@@ -155,19 +156,51 @@ const ViewMembership = () => {
                 <tbody>
                   {memberships.map((membership, idx) => (
                     <tr key={idx}>
-                      <td style={{ verticalAlign: "middle" }}>{membership.memberId}</td>
-                      <td style={{ verticalAlign: "middle" }}>{membership.iqamaNumber}</td>
-                      <td style={{ verticalAlign: "middle" }}>{membership.name}</td>
-                      <td style={{ verticalAlign: "middle" }}>{membership.phoneNumber || "N/A"}</td>
-                      <td style={{ verticalAlign: "middle" }}>{membership.status}</td>
-                      <td style={{ verticalAlign: "middle" }}>{membership.areaName || "N/A"}</td>
                       <td style={{ verticalAlign: "middle" }}>
+                        {membership.memberId}
+                      </td>
+                      <td style={{ verticalAlign: "middle" }}>
+                        {membership.iqamaNumber}
+                      </td>
+                      <td style={{ verticalAlign: "middle" }}>
+                        {membership.name}
+                      </td>
+                      <td style={{ verticalAlign: "middle" }}>
+                        {membership.phoneNumber || "N/A"}
+                      </td>
+                      <td style={{ verticalAlign: "middle" }}>
+                        <span
+                          className={`badge bg-${
+                            membership.status === "active"
+                              ? "success"
+                              : "danger"
+                          }`}
+                        >
+                          {membership.status}
+                        </span>
+                      </td>
+                      <td style={{ verticalAlign: "middle" }}>
+                        {membership.areaName || "N/A"}
+                      </td>
+                      <td style={{ verticalAlign: "middle" }}>
+                        <Button
+                          type="button"
+                          variant="primary"
+                          className="me-2"
+                          as={Link}
+                          to={`/memberships/edit/${membership.id}`}
+                        >
+                          <IconifyIcon icon="mdi:account-edit" color="white" />
+                        </Button>
                         <Button
                           type="button"
                           variant="danger"
                           onClick={() => handleDeleteClick(membership)}
                         >
-                          <IconifyIcon icon="ri:delete-bin-4-fill" color="white" />
+                          <IconifyIcon
+                            icon="ri:delete-bin-4-fill"
+                            color="white"
+                          />
                         </Button>
                       </td>
                     </tr>
@@ -206,7 +239,8 @@ const ViewMembership = () => {
           <Modal.Title>Delete Membership</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Are you sure you want to delete this membership? This action cannot be undone.
+          Are you sure you want to delete this membership? This action cannot be
+          undone.
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>

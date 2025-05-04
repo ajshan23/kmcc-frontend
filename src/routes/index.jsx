@@ -15,12 +15,23 @@ const Dashboard = lazy(() => import("@/app/(admin)/dashboard/page"));
 
 //usrrs
 const Table = lazy(() => import("@/app/(admin)/newItems/Table"));
-const SingleUser = lazy(() => import("@/app/(admin)/newItems/Page"));
+const ProfileView = lazy(() => import("@/app/(admin)/newItems/ProfileView"));
+const UserEdit = lazy(() => import("@/app/(admin)/newItems/UserEdit"));
 
 //banner
 const Banner = lazy(() => import("@/app/(admin)/banner/Banner"));
+const Test = lazy(() => import("@/app/(admin)/test/Test"));
 const BannerUpdate = lazy(() =>
   import("@/app/(admin)/banner/Components/BannerUpdate")
+);
+
+//SubWingList
+
+const SubWingList = lazy(() => import("@/app/(admin)/subwing/SubWingList"));
+const SubWingForm = lazy(() => import("@/app/(admin)/subwing/SubWingForm"));
+
+const SubWingDetails = lazy(() =>
+  import("@/app/(admin)/subwing/SubWingDetails")
 );
 
 //event
@@ -29,6 +40,10 @@ const Event = lazy(() => import("@/app/(admin)/events/Event"));
 const EventCreate = lazy(() =>
   import("@/app/(admin)/events/Components/EventCreate")
 );
+
+const BookList = lazy(() => import("@/app/(admin)/books/BookList"));
+const BookForm = lazy(() => import("@/app/(admin)/books/BookForm"));
+const BookDetails = lazy(() => import("@/app/(admin)/books/BookDetails"));
 
 //service
 
@@ -40,6 +55,9 @@ const ServiceCreate = lazy(() =>
 //jobs
 const Job = lazy(() => import("@/app/(admin)/jobs/Job"));
 const JobCreate = lazy(() => import("@/app/(admin)/jobs/Components/JobCreate"));
+const JobApplications = lazy(() =>
+  import("@/app/(admin)/jobs/Components/JobApplications")
+);
 
 //news
 
@@ -54,7 +72,13 @@ const Membership = lazy(() =>
 const AddMembership = lazy(() =>
   import("@/app/(admin)/membership/AddMembership")
 );
-
+//exlusive members
+const ExclusiveMembers = lazy(() =>
+  import("@/app/(admin)/exclusiveMemberList/ExclusiveMembersList")
+);
+const ExclusiveMembersForm = lazy(() =>
+  import("@/app/(admin)/exclusiveMemberList/Components/ExclusiveMemberForm")
+);
 //airport
 const Airport = lazy(() => import("@/app/(admin)/airport/Airport"));
 const AirportCreate = lazy(() =>
@@ -66,10 +90,48 @@ const Survey = lazy(() => import("@/app/(admin)/survey/Survey"));
 const SurveyCreate = lazy(() =>
   import("@/app/(admin)/survey/Components/SurveyCreate")
 );
+const SurveyAnswers = lazy(() =>
+  import("@/app/(admin)/survey/Components/SurveyAnswers")
+);
+//committee
+const CommitteeList = lazy(() =>
+  import("@/app/(admin)/committee/CommitteeList")
+);
+const CommitteeForm = lazy(() =>
+  import("@/app/(admin)/committee/CommitteeForm")
+);
+const CommitteeDetails = lazy(() =>
+  import("@/app/(admin)/committee/CommitteeDetails")
+);
+const MemberEditForm = lazy(() =>
+  import("@/app/(admin)/committee/MemberEditForm")
+);
 
+//investment longterm
+const InvestmentList = lazy(() =>
+  import("@/app/(admin)/investments/InvestmentList")
+);
+const NewInvestmentForm = lazy(() =>
+  import("@/app/(admin)/investments/NewInvestmentForm")
+);
+const InvestmentDetails = lazy(() =>
+  import("@/app/(admin)/investments/InvestmentDetails")
+);
+const AddDepositForm = lazy(() =>
+  import("@/app/(admin)/investments/AddDepositForm")
+);
+const AddProfitForm = lazy(() =>
+  import("@/app/(admin)/investments/AddProfitForm")
+);
+const AddProfitPayoutForm = lazy(() =>
+  import("@/app/(admin)/investments/AddProfitPayoutForm")
+);
 //questions
 const AddQuestions = lazy(() =>
   import("@/app/(admin)/survey/Components/AddQuestions")
+);
+const UpdateQuestion = lazy(() =>
+  import("@/app/(admin)/survey/Components/UpdateQuestion")
 );
 const ViewQuestions = lazy(() =>
   import("@/app/(admin)/survey/Components/ViewQuestions")
@@ -156,6 +218,29 @@ const FileUploads = lazy(() => import("@/app/(admin)/forms/file-uploads/page"));
 const Editors = lazy(() => import("@/app/(admin)/forms/editors/page"));
 const ImageCrop = lazy(() => import("@/app/(admin)/forms/image-crop/page"));
 const Editable = lazy(() => import("@/app/(admin)/forms/editable/page"));
+
+//gold-program
+const GoldProgramsList = lazy(() =>
+  import("@/app/(admin)/goldproject/GoldProgramsList")
+);
+const GoldProgramForm = lazy(() =>
+  import("@/app/(admin)/goldproject/GoldProgramForm")
+);
+const GoldProgramDetails = lazy(() =>
+  import("@/app/(admin)/goldproject/GoldProgramDetails")
+);
+const ProgramLotsList = lazy(() =>
+  import("@/app/(admin)/goldproject/ProgramLotsList")
+);
+const RecordPayment = lazy(() =>
+  import("@/app/(admin)/goldproject/RecordPayment")
+);
+const AssignLotForm = lazy(() =>
+  import("@/app/(admin)/goldproject/AssignLotForm")
+);
+const WinnersManagement = lazy(() =>
+  import("@/app/(admin)/goldproject/WinnersManagement")
+);
 
 // tables
 const BasicTables = lazy(() => import("@/app/(admin)/tables/basic/page"));
@@ -541,7 +626,12 @@ const userRoutes = [
   {
     path: "/users/:id",
     name: "user",
-    element: <SingleUser />,
+    element: <ProfileView />,
+  },
+  {
+    path: "/users/:id/edit",
+    name: "user edit",
+    element: <UserEdit />,
   },
 ];
 const bannerRoutes = [
@@ -564,6 +654,11 @@ const eventRoutes = [
     element: <EventCreate />,
   },
   {
+    path: "/event/edit/:id",
+    name: "banner",
+    element: <EventCreate />,
+  },
+  {
     path: "/event",
     name: "event",
     element: <Event />,
@@ -581,6 +676,11 @@ const serviceRoutes = [
     name: "service",
     element: <Service />,
   },
+  {
+    path: "/service/edit/:id",
+    name: "service",
+    element: <ServiceCreate />,
+  },
 ];
 
 const jobRoutes = [
@@ -593,6 +693,16 @@ const jobRoutes = [
     path: "/job",
     name: "job",
     element: <Job />,
+  },
+  {
+    path: "/job/edit/:id",
+    name: "job",
+    element: <JobCreate />,
+  },
+  {
+    path: "/job/applications/:jobId",
+    name: "job",
+    element: <JobApplications />,
   },
 ];
 
@@ -607,6 +717,11 @@ const newsRoutes = [
     name: "news",
     element: <News />,
   },
+  {
+    path: "/news/edit/:id",
+    name: "news",
+    element: <NewsCreate />,
+  },
 ];
 
 const airportRoutes = [
@@ -619,6 +734,11 @@ const airportRoutes = [
     path: "/airport",
     name: "airport",
     element: <Airport />,
+  },
+  {
+    path: "/airport/edit/:id",
+    name: "airport",
+    element: <AirportCreate />,
   },
 ];
 
@@ -649,9 +769,20 @@ const surveyRoutes = [
     element: <AddQuestions />, //test
   },
   {
+    path: "/question/edit/:questionId",
+    name: "Edit add",
+    element: <UpdateQuestion />, //test
+  },
+
+  {
     path: "/survey",
     name: "survey",
     element: <Survey />,
+  },
+  {
+    path: "/survey/answers/:surveyId",
+    name: "Answers",
+    element: <SurveyAnswers />,
   },
 ];
 
@@ -665,6 +796,181 @@ const memberShipRoutes = [
     path: "/memberships/new",
     name: "New Membership ",
     element: <AddMembership />,
+  },
+  {
+    path: "/memberships/edit/:id",
+    name: "Membership Edit",
+    element: <AddMembership />,
+  },
+  {
+    path: "/test",
+    name: "test",
+    element: <Test />,
+  },
+];
+
+const exclusiveMemberRoutes = [
+  {
+    path: "/exclusive-members",
+    name: "Exclusive Members",
+    element: <ExclusiveMembers />,
+  },
+  {
+    path: "/exclusive-members/new",
+    name: "New Membership ",
+    element: <ExclusiveMembersForm />,
+  },
+  {
+    path: "/exclusive-members/edit/:id",
+    name: "Edit Membership ",
+    element: <ExclusiveMembersForm />,
+  },
+];
+const goldProgramRoutes = [
+  {
+    path: "/gold-programs",
+    name: "Gold Programs",
+    element: <GoldProgramsList />,
+  },
+  {
+    path: "/gold-programs/new",
+    name: "New Gold Program",
+    element: <GoldProgramForm />,
+  },
+  {
+    path: "/gold-programs/edit/:id",
+    name: "Edit  Gold Program ",
+    element: <GoldProgramForm />,
+  },
+  {
+    path: "/gold-programs/:id",
+    name: " Gold Program ",
+    element: <GoldProgramDetails />,
+  },
+  {
+    path: "/gold-programs/:programId/lots",
+    name: " Gold Program ",
+    element: <ProgramLotsList />,
+  },
+  {
+    path: "/gold-programs/:programId/lots/new",
+    name: " Gold Program ",
+    element: <AssignLotForm />,
+  },
+  {
+    path: "/gold-programs/:id/lots/:lotId/payments",
+    name: " Gold Program ",
+    element: <RecordPayment />,
+  },
+  {
+    path: "/gold-programs/:programId/winners",
+    name: " Gold Program ",
+    element: <WinnersManagement />,
+  },
+];
+
+const bookRoutes = [
+  {
+    path: "/book",
+    name: "Book",
+    element: <BookList />,
+  },
+  {
+    path: "/book/new",
+    name: "Book",
+    element: <BookForm />,
+  },
+  {
+    path: "/book/edit/:id",
+    element: <BookForm />,
+    name: "Edit  book ",
+  },
+  {
+    path: "/book/:id",
+    name: " Book details ",
+    element: <BookDetails />,
+  },
+];
+const committeeRoutes = [
+  {
+    path: "/constitution-committees",
+    name: "CommitteeList",
+    element: <CommitteeList />,
+  },
+  {
+    path: "/constitution-committees/new",
+    element: <CommitteeForm />,
+    name: "CommitteeForm",
+  },
+  {
+    path: "/constitution-committees/edit/:id",
+    element: <CommitteeForm />,
+    name: "CommitteeForm",
+  },
+  {
+    path: "/constitution-committees/:committeeId",
+    element: <CommitteeDetails />,
+    name: "CommitteeDetails",
+  },
+  {
+    path: "/constitution-committees/members/edit/:memberId",
+    element: <MemberEditForm />,
+    name: "MemberEditForm",
+  },
+];
+
+const longInvestment = [
+  {
+    path: "/investments",
+    name: "InvestmentList",
+    element: <InvestmentList />,
+  },
+  {
+    path: "/investments/new",
+    element: <NewInvestmentForm />,
+    name: "NewInvestmentForm",
+  },
+  {
+    path: "/investments/:id",
+    element: <InvestmentDetails />,
+    name: "InvestmentDetails",
+  },
+  {
+    path: "/investments/:id/deposits/new",
+    element: <AddDepositForm />,
+    name: "AddDepositForm",
+  },
+  {
+    path: "/investments/:id/profits/new",
+    element: <AddProfitForm />,
+    name: "AddProfitForm",
+  },
+  {
+    path: "/investments/:id/profit-payouts/new",
+    element: <AddProfitPayoutForm />,
+    name: "AddProfitPayoutForm",
+  },
+];
+const subwingRoutes = [
+  {
+    path: "/sub-wing",
+    name: "Sub wing",
+    element: <SubWingList />,
+  },
+  {
+    path: "/sub-wing/new",
+    name: "Sub wing new",
+    element: <SubWingForm />,
+  },
+  {
+    path: "/sub-wing/edit/:id",
+    name: "Sub wing edit",
+    element: <SubWingForm />,
+  },
+  {
+    path: "/sub-wing/:subWingId",
+    name: "Sub wing ",
+    element: <SubWingDetails />,
   },
 ];
 
@@ -742,5 +1048,11 @@ export const appRoutes = [
   ...airportRoutes,
   ...surveyRoutes,
   ...memberShipRoutes,
+  ...exclusiveMemberRoutes,
+  ...goldProgramRoutes,
+  ...subwingRoutes,
+  ...bookRoutes,
+  ...committeeRoutes,
+  ...longInvestment,
 ];
 export const publicRoutes = [...authRoutes, ...otherPublicRoutes];

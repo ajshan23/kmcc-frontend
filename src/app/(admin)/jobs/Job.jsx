@@ -12,7 +12,7 @@ import {
   ToastBody,
 } from "react-bootstrap";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
-import smLogo from "@/assets/images/logo-sm.png"; // Import the logo for the toast
+import smLogo from "@/assets/images/logo-sm.png";
 
 const Job = () => {
   const [jobs, setJobs] = useState([]);
@@ -44,7 +44,9 @@ const Job = () => {
     if (!selectedJob) return;
     try {
       await axiosInstance.delete(`/jobs/admin/${selectedJob.id}`);
-      setJobs((prevJobs) => prevJobs.filter((job) => job.id !== selectedJob.id));
+      setJobs((prevJobs) =>
+        prevJobs.filter((job) => job.id !== selectedJob.id)
+      );
       setToastMessage("Job deleted successfully!");
       setShowToast(true);
     } catch (error) {
@@ -121,14 +123,19 @@ const Job = () => {
                     <th style={{ textAlign: "center" }}>Salary</th>
                     <th style={{ textAlign: "center" }}>Place</th>
                     <th style={{ textAlign: "center" }}>Image</th>
+                    <th style={{ textAlign: "center" }}>Status</th>
                     <th style={{ textAlign: "center" }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {jobs.map((job, idx) => (
                     <tr key={idx}>
-                      <td style={{ verticalAlign: "middle" }}>{job.companyName}</td>
-                      <td style={{ verticalAlign: "middle" }}>{job.position}</td>
+                      <td style={{ verticalAlign: "middle" }}>
+                        {job.companyName}
+                      </td>
+                      <td style={{ verticalAlign: "middle" }}>
+                        {job.position}
+                      </td>
                       <td style={{ verticalAlign: "middle" }}>{job.jobMode}</td>
                       <td style={{ verticalAlign: "middle" }}>{job.salary}</td>
                       <td style={{ verticalAlign: "middle" }}>{job.place}</td>
@@ -148,12 +155,40 @@ const Job = () => {
                         )}
                       </td>
                       <td style={{ verticalAlign: "middle" }}>
+                        {job.isClosed ? (
+                          <span className="badge bg-danger">Closed</span>
+                        ) : (
+                          <span className="badge bg-success">Active</span>
+                        )}
+                      </td>
+                      <td style={{ verticalAlign: "middle" }}>
+                        <Button
+                          type="button"
+                          variant="info"
+                          className="me-2"
+                          as={Link}
+                          to={`/job/applications/${job.id}`}
+                        >
+                          <IconifyIcon icon="mdi:eye" color="white" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="primary"
+                          className="me-2"
+                          as={Link}
+                          to={`/job/edit/${job.id}`}
+                        >
+                          <IconifyIcon icon="mdi:pencil" color="white" />
+                        </Button>
                         <Button
                           type="button"
                           variant="danger"
                           onClick={() => handleDeleteClick(job)}
                         >
-                          <IconifyIcon icon="ri:delete-bin-4-fill" color="white" />
+                          <IconifyIcon
+                            icon="ri:delete-bin-4-fill"
+                            color="white"
+                          />
                         </Button>
                       </td>
                     </tr>
@@ -170,7 +205,8 @@ const Job = () => {
           <Modal.Title>Delete Job</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Are you sure you want to delete this job? This action cannot be undone.
+          Are you sure you want to delete this job? This action cannot be
+          undone.
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>

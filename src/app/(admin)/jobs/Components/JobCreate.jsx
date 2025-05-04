@@ -11,41 +11,86 @@ import {
   ToastHeader,
   ToastBody,
 } from "react-bootstrap";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
 import "cropperjs/dist/cropper.css";
 import axiosInstance from "../../../../globalFetch/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import PageTitle from "../../../../components/PageTitle";
 import smLogo from "@/assets/images/logo-sm.png";
 
-const JobCreate = () => {
+const JobForm = () => {
+  const { id } = useParams();
+  const isEditMode = Boolean(id);
   const navigate = useNavigate();
-  const [showToast, setShowToast] = useState(false); // State to control Toast visibility
-  const [toastMessage, setToastMessage] = useState(""); // State for toast message
-  const [imageSrc, setImageSrc] = useState(null); // State for uploaded image
-  const [croppedImage, setCroppedImage] = useState(null); // State for cropped image
-  const [companyName, setCompanyName] = useState(""); // State for company name
-  const [position, setPosition] = useState(""); // State for position
-  const [jobmode, setJobmode] = useState(""); // State for job mode
-  const [salary, setSalary] = useState(""); // State for salary
-  const [place, setPlace] = useState(""); // State for place
-  const [jobDescription, setJobDescription] = useState(""); // State for job description
-  const [keyResponsibilities, setKeyResponsibilities] = useState([""]); // State for key responsibilities
-  const [requirements, setRequirements] = useState([""]); // State for requirements
-  const [benefits, setBenefits] = useState([{ heading: "", description: "" }]); // State for benefits
-  const [isLoading, setIsLoading] = useState(false); // State for loading state
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [imageSrc, setImageSrc] = useState(null);
+  const [croppedImage, setCroppedImage] = useState(null);
+  const [companyName, setCompanyName] = useState("");
+  const [position, setPosition] = useState("");
+  const [jobmode, setJobmode] = useState("");
+  const [salary, setSalary] = useState("");
+  const [place, setPlace] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
+  const [keyResponsibilities, setKeyResponsibilities] = useState([""]);
+  const [requirements, setRequirements] = useState([""]);
+  const [benefits, setBenefits] = useState([{ heading: "", description: "" }]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isClosed, setIsClosed] = useState(false);
 
-  // Predefined list of benefit headings
-  const predefinedHeadings = ["Medical", "Time Off", "Flexible Hours", "Remote Work", "Bonuses"];
-  const [availableHeadings, setAvailableHeadings] = useState(predefinedHeadings); // State for available headings
+  const predefinedHeadings = [
+    "Medical",
+    "Time Off",
+    "Flexible Hours",
+    "Remote Work",
+    "Bonuses",
+  ];
+  const [availableHeadings, setAvailableHeadings] =
+    useState(predefinedHeadings);
 
   const cropperRef = useRef(null);
-
-  // Fixed aspect ratio for job image (200x200)
   const bannerAspectRatio = 200 / 200;
 
-  // Handle image upload
+  useEffect(() => {
+    if (isEditMode) {
+      const fetchJob = async () => {
+        try {
+          const response = await axiosInstance.get(`/jobs/${id}`);
+          if (response.status === 200) {
+            const job = response.data.data || response.data; // Handle both response structures
+
+            setCompanyName(job.companyName || "");
+            setPosition(job.position || "");
+            setJobmode(job.jobMode || "");
+            setSalary(job.salary ? job.salary.toString() : "");
+            setPlace(job.place || "");
+            setJobDescription(job.jobDescription || "");
+            setKeyResponsibilities(job.keyResponsibilities || [""]);
+            setRequirements(job.requirements || [""]);
+            setBenefits(job.benefits || [{ heading: "", description: "" }]);
+            setIsClosed(job.isClosed || false);
+
+            if (job.logo) {
+              setImageSrc(job.logo);
+              setCroppedImage(job.logo);
+            }
+
+            const usedHeadings = job.benefits?.map((b) => b.heading) || [];
+            setAvailableHeadings(
+              predefinedHeadings.filter((h) => !usedHeadings.includes(h))
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching job:", error);
+          setToastMessage("Failed to load job data.");
+          setShowToast(true);
+        }
+      };
+      fetchJob();
+    }
+  }, [id, isEditMode]);
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -57,23 +102,19 @@ const JobCreate = () => {
     }
   };
 
-  // Handle crop event
   const onCrop = () => {
     const cropper = cropperRef.current?.cropper;
     if (cropper) {
-      // Get the cropped image as a blob
       cropper.getCroppedCanvas().toBlob((blob) => {
         setCroppedImage(blob);
       });
     }
   };
 
-  // Handle adding a new key responsibility field
   const addKeyResponsibilitiesField = () => {
     setKeyResponsibilities([...keyResponsibilities, ""]);
   };
 
-  // Handle removing a key responsibility field
   const removeKeyResponsibilitiesField = (index) => {
     const updatedKeyResponsibilities = keyResponsibilities.filter(
       (_, i) => i !== index
@@ -81,55 +122,46 @@ const JobCreate = () => {
     setKeyResponsibilities(updatedKeyResponsibilities);
   };
 
-  // Handle updating a key responsibility field
   const updateKeyResponsibilitiesField = (index, value) => {
     const updatedKeyResponsibilities = [...keyResponsibilities];
     updatedKeyResponsibilities[index] = value;
     setKeyResponsibilities(updatedKeyResponsibilities);
   };
 
-  // Handle adding a new requirement field
   const addRequirementsField = () => {
     setRequirements([...requirements, ""]);
   };
 
-  // Handle removing a requirement field
   const removeRequirementsField = (index) => {
     const updatedRequirements = requirements.filter((_, i) => i !== index);
     setRequirements(updatedRequirements);
   };
 
-  // Handle updating a requirement field
   const updateRequirementsField = (index, value) => {
     const updatedRequirements = [...requirements];
     updatedRequirements[index] = value;
     setRequirements(updatedRequirements);
   };
 
-  // Handle adding a new benefit field
   const addBenefitsField = () => {
     setBenefits([...benefits, { heading: "", description: "" }]);
   };
 
-  // Handle removing a benefit field
   const removeBenefitsField = (index) => {
     const removedBenefit = benefits[index];
     setBenefits(benefits.filter((_, i) => i !== index));
 
-    // Add the removed heading back to availableHeadings if it was predefined
     if (predefinedHeadings.includes(removedBenefit.heading)) {
       setAvailableHeadings([...availableHeadings, removedBenefit.heading]);
     }
   };
 
-  // Handle updating a benefit field
   const updateBenefitsField = (index, field, value) => {
     const updatedBenefits = [...benefits];
     const previousHeading = updatedBenefits[index].heading;
 
     updatedBenefits[index] = { ...updatedBenefits[index], [field]: value };
 
-    // If the heading is updated, update availableHeadings
     if (field === "heading") {
       if (predefinedHeadings.includes(previousHeading)) {
         setAvailableHeadings([...availableHeadings, previousHeading]);
@@ -142,15 +174,13 @@ const JobCreate = () => {
     setBenefits(updatedBenefits);
   };
 
-  // Handle upload to backend
-  const handleUpload = async () => {
-    if (!croppedImage) {
-      setToastMessage("Please crop the image first.");
+  const handleSubmit = async () => {
+    if (!croppedImage && !isEditMode) {
+      setToastMessage("Please upload and crop the image first.");
       setShowToast(true);
       return;
     }
 
-    // Validate required fields
     if (
       !companyName ||
       !position ||
@@ -167,17 +197,19 @@ const JobCreate = () => {
       return;
     }
 
-    setIsLoading(true); // Set loading state
+    setIsLoading(true);
 
-    // Create FormData and append the file with the key 'logo'
     const formData = new FormData();
-    formData.append("logo", croppedImage, "job-logo.png"); // Append the cropped image as a file
+    if (croppedImage && typeof croppedImage !== "string") {
+      formData.append("logo", croppedImage, "job-logo.png");
+    }
     formData.append("companyName", companyName);
     formData.append("position", position);
     formData.append("jobMode", jobmode);
     formData.append("salary", salary);
     formData.append("place", place);
     formData.append("jobDescription", jobDescription);
+    formData.append("isClosed", isClosed.toString());
     formData.append(
       "keyResponsibilities",
       JSON.stringify(keyResponsibilities.filter((k) => k.trim() !== ""))
@@ -196,37 +228,51 @@ const JobCreate = () => {
     );
 
     try {
-      // Use Axios for the POST request
-      const response = await axiosInstance.post("/jobs/create", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      let response;
+      if (isEditMode) {
+        response = await axiosInstance.put(`/jobs/${id}`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      } else {
+        response = await axiosInstance.post("/jobs/create", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      }
 
-      if (response.status === 201) {
-        setToastMessage("Job created successfully!");
-        setShowToast(true); // Show success toast
+      if (response.status === (isEditMode ? 200 : 201)) {
+        setToastMessage(
+          `Job ${isEditMode ? "updated" : "created"} successfully!`
+        );
+        setShowToast(true);
         setTimeout(() => {
-          navigate("/job"); // Redirect to /job after 2 seconds
+          navigate("/job");
         }, 2000);
       } else {
-        setToastMessage("Failed to create job.");
-        setShowToast(true); // Show error toast
+        setToastMessage(`Failed to ${isEditMode ? "update" : "create"} job.`);
+        setShowToast(true);
       }
     } catch (error) {
-      console.error("Error creating job:", error);
-      setToastMessage("Failed to create job. Please try again.");
-      setShowToast(true); // Show error toast
+      console.error(
+        `Error ${isEditMode ? "updating" : "creating"} job:`,
+        error
+      );
+      setToastMessage(
+        `Failed to ${isEditMode ? "update" : "create"} job. Please try again.`
+      );
+      setShowToast(true);
     } finally {
-      setIsLoading(false); // Reset loading state
+      setIsLoading(false);
     }
   };
 
   return (
     <>
-      <PageTitle title="New Job" />
+      <PageTitle title={isEditMode ? "Edit Job" : "New Job"} />
 
-      {/* Toast Notification */}
       <Toast
         onClose={() => setShowToast(false)}
         show={showToast}
@@ -247,7 +293,6 @@ const JobCreate = () => {
             <CardBody>
               <Row>
                 <Col lg={9}>
-                  {/* Image Upload */}
                   <Form.Group className="mb-3">
                     <Form.Label>Upload Job Logo (200x200)</Form.Label>
                     <Form.Control
@@ -257,7 +302,6 @@ const JobCreate = () => {
                     />
                   </Form.Group>
 
-                  {/* Cropper */}
                   {imageSrc && (
                     <>
                       <div className="img-container">
@@ -331,7 +375,6 @@ const JobCreate = () => {
                 </Col>
 
                 <Col lg={3}>
-                  {/* Company Name Field */}
                   <Form.Group className="mb-3">
                     <Form.Label>Company Name</Form.Label>
                     <Form.Control
@@ -342,7 +385,6 @@ const JobCreate = () => {
                     />
                   </Form.Group>
 
-                  {/* Position Field */}
                   <Form.Group className="mb-3">
                     <Form.Label>Position</Form.Label>
                     <Form.Control
@@ -353,7 +395,6 @@ const JobCreate = () => {
                     />
                   </Form.Group>
 
-                  {/* Job Mode Field */}
                   <Form.Group className="mb-3">
                     <Form.Label>Job Mode</Form.Label>
                     <Form.Control
@@ -370,7 +411,6 @@ const JobCreate = () => {
                     </Form.Control>
                   </Form.Group>
 
-                  {/* Salary Field */}
                   <Form.Group className="mb-3">
                     <Form.Label>Salary</Form.Label>
                     <Form.Control
@@ -381,7 +421,6 @@ const JobCreate = () => {
                     />
                   </Form.Group>
 
-                  {/* Place Field */}
                   <Form.Group className="mb-3">
                     <Form.Label>Place</Form.Label>
                     <Form.Control
@@ -392,7 +431,19 @@ const JobCreate = () => {
                     />
                   </Form.Group>
 
-                  {/* Job Description Field */}
+                  {isEditMode && (
+                    <Form.Group className="mb-3">
+                      <Form.Check
+                        type="switch"
+                        id="job-status-switch"
+                        label={isClosed ? "Job is Closed" : "Job is Open"}
+                        checked={isClosed}
+                        onChange={(e) => setIsClosed(e.target.checked)}
+                        disabled={isLoading}
+                      />
+                    </Form.Group>
+                  )}
+
                   <Form.Group className="mb-3">
                     <Form.Label>Job Description</Form.Label>
                     <Form.Control
@@ -404,7 +455,6 @@ const JobCreate = () => {
                     />
                   </Form.Group>
 
-                  {/* Key Responsibilities Field */}
                   <Form.Group className="mb-3">
                     <Form.Label>Key Responsibilities</Form.Label>
                     {keyResponsibilities.map((responsibility, index) => (
@@ -427,6 +477,7 @@ const JobCreate = () => {
                           variant="danger"
                           className="ms-2"
                           onClick={() => removeKeyResponsibilitiesField(index)}
+                          disabled={keyResponsibilities.length === 1}
                         >
                           <IconifyIcon icon="mdi:delete" />
                         </Button>
@@ -441,7 +492,6 @@ const JobCreate = () => {
                     </Button>
                   </Form.Group>
 
-                  {/* Requirements Field */}
                   <Form.Group className="mb-3">
                     <Form.Label>Requirements</Form.Label>
                     {requirements.map((requirement, index) => (
@@ -461,6 +511,7 @@ const JobCreate = () => {
                           variant="danger"
                           className="ms-2"
                           onClick={() => removeRequirementsField(index)}
+                          disabled={requirements.length === 1}
                         >
                           <IconifyIcon icon="mdi:delete" />
                         </Button>
@@ -475,7 +526,6 @@ const JobCreate = () => {
                     </Button>
                   </Form.Group>
 
-                  {/* Benefits Field */}
                   <Form.Group className="mb-3">
                     <Form.Label>Benefits</Form.Label>
                     {benefits.map((benefit, index) => (
@@ -498,9 +548,26 @@ const JobCreate = () => {
                               {heading}
                             </option>
                           ))}
+                          <option value="Other">Other</option>
                         </Form.Control>
+                        {benefit.heading === "Other" && (
+                          <Form.Control
+                            type="text"
+                            value={benefit.description}
+                            onChange={(e) =>
+                              updateBenefitsField(
+                                index,
+                                "heading",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Enter custom benefit name"
+                            className="mb-2"
+                          />
+                        )}
                         <Form.Control
-                          type="text"
+                          as="textarea"
+                          rows={2}
                           value={benefit.description}
                           onChange={(e) =>
                             updateBenefitsField(
@@ -516,7 +583,7 @@ const JobCreate = () => {
                           <Button
                             variant="danger"
                             onClick={() => removeBenefitsField(index)}
-                            disabled={benefits.length === 1} // Prevent removing last one
+                            disabled={benefits.length === 1}
                           >
                             <IconifyIcon icon="mdi:delete" />
                           </Button>
@@ -532,14 +599,19 @@ const JobCreate = () => {
                     </Button>
                   </Form.Group>
 
-                  {/* Upload Button */}
                   <Button
                     variant="primary"
                     className="w-100 mt-3"
-                    onClick={handleUpload}
-                    disabled={!croppedImage || isLoading}
+                    onClick={handleSubmit}
+                    disabled={isLoading}
                   >
-                    {isLoading ? "Creating..." : "Create Job"}
+                    {isLoading
+                      ? isEditMode
+                        ? "Updating..."
+                        : "Creating..."
+                      : isEditMode
+                      ? "Update Job"
+                      : "Create Job"}
                   </Button>
                 </Col>
               </Row>
@@ -551,4 +623,4 @@ const JobCreate = () => {
   );
 };
 
-export default JobCreate;
+export default JobForm;

@@ -17,7 +17,7 @@ const Profile = () => {
     const fetchUser = async () => {
       try {
         const response = await fetchWithAuth(
-          `http://13.203.184.112:3000/api/admin/users/${id}`
+          `http://localhost:3000/api/admin/users/${id}`
         );
         setUser(response.data); // Adjust based on API response
         console.log(response.data);

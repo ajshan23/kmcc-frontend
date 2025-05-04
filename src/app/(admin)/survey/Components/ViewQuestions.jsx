@@ -15,6 +15,7 @@ import {
 } from "react-bootstrap";
 import smLogo from "../../../../assets/images/logo-sm.png";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
 const ViewQuestions = () => {
   const navigate = useNavigate();
@@ -29,7 +30,6 @@ const ViewQuestions = () => {
 
   useEffect(() => {
     if (!id) navigate("/survey");
-
     fetchQuestions();
   }, []);
 
@@ -40,7 +40,11 @@ const ViewQuestions = () => {
         `/survey/surveys/${id}/questions`
       );
       if (response.status === 200) {
-        setQuestions(response.data.data.questions);
+        // Sort questions by position before setting state
+        const sortedQuestions = response.data.data.questions.sort(
+          (a, b) => a.position - b.position
+        );
+        setQuestions(sortedQuestions);
       }
     } catch (error) {
       console.error("Error fetching questions:", error);
@@ -61,7 +65,6 @@ const ViewQuestions = () => {
   const handleDeleteQuestion = async () => {
     if (!selectedQuestionId) return;
 
-    // Optimistic update
     setQuestions((prev) => prev.filter((q) => q.id !== selectedQuestionId));
 
     try {
@@ -73,10 +76,45 @@ const ViewQuestions = () => {
     } catch (error) {
       console.error("Error deleting question:", error);
       setToastMessage("Failed to delete question.");
-      fetchQuestions(); // Re-fetch data if deletion failed
+      fetchQuestions();
     } finally {
       setShowToast(true);
       handleDeleteModalClose();
+    }
+  };
+
+  const onDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(questions);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    // Update local state immediately for responsive UI
+    setQuestions(items);
+
+    // Prepare the new order of question IDs
+    const questionIds = items.map((q) => q.id);
+
+    try {
+      // Send the new order to the backend
+      const response = await axiosInstance.post(
+        `/survey/surveys/${id}/reorder-questions`,
+        { questionIds }
+      );
+
+      if (response.status !== 200) {
+        throw new Error("Failed to save new order");
+      }
+
+      setToastMessage("Question order updated successfully!");
+      setShowToast(true);
+    } catch (error) {
+      console.error("Error reordering questions:", error);
+      // Revert to previous state if API call fails
+      fetchQuestions();
+      setToastMessage("Failed to update question order.");
+      setShowToast(true);
     }
   };
 
@@ -84,7 +122,6 @@ const ViewQuestions = () => {
     <Container className="p-4">
       <PageTitle title="Questions" />
 
-      {/* Toast Notification */}
       <Toast
         onClose={() => setShowToast(false)}
         show={showToast}
@@ -134,65 +171,107 @@ const ViewQuestions = () => {
             {loading ? (
               <p className="text-center mt-3">Loading questions...</p>
             ) : (
-              <Table
-                striped
-                bordered
-                hover
-                responsive
-                className="mt-3 text-center"
-              >
-                <thead>
-                  <tr>
-                    <th>Survey Id</th>
-                    <th>Type</th>
-                    <th>Text</th>
-                    <th>Image</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {questions.map((qstn, idx) => (
-                    <tr key={idx}>
-                      <td>{qstn.surveyId}</td>
-                      <td>{qstn.type}</td>
-                      <td>{qstn.text}</td>
-                      <td>
-                        {qstn.image ? (
-                          <img
-                            src={qstn.image}
-                            alt="Question"
-                            style={{
-                              width: "50px",
-                              height: "auto",
-                              borderRadius: 2,
-                            }}
-                          />
-                        ) : (
-                          "N/A"
-                        )}
-                      </td>
-                      <td style={{ verticalAlign: "middle" }}>
-                        <Button
-                          type="button"
-                          variant="danger"
-                          onClick={() => handleDeleteClick(qstn.id)}
-                        >
-                          <IconifyIcon
-                            color="white"
-                            icon="ri:delete-bin-4-fill"
-                          />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
+              <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="questions">
+                  {(provided) => (
+                    <Table
+                      striped
+                      bordered
+                      hover
+                      responsive
+                      className="mt-3 text-center"
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                    >
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Type</th>
+                          <th>Text</th>
+                          <th>Image</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {questions.map((qstn, idx) => (
+                          <Draggable
+                            key={qstn.id}
+                            draggableId={String(qstn.id)}
+                            index={idx}
+                          >
+                            {(provided) => (
+                              <tr
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                              >
+                                <td>
+                                  <div className="d-flex align-items-center">
+                                    <IconifyIcon
+                                      icon="mdi:drag"
+                                      className="me-2"
+                                    />
+                                    {idx + 1}
+                                  </div>
+                                </td>
+                                <td>{qstn.type}</td>
+                                <td>{qstn.text}</td>
+                                <td>
+                                  {qstn.image ? (
+                                    <img
+                                      src={qstn.image}
+                                      alt="Question"
+                                      style={{
+                                        width: "50px",
+                                        height: "auto",
+                                        borderRadius: 2,
+                                      }}
+                                    />
+                                  ) : (
+                                    "N/A"
+                                  )}
+                                </td>
+                                <td style={{ verticalAlign: "middle" }}>
+                                  <div className="d-flex justify-content-center gap-2">
+                                    <Button
+                                      variant="primary"
+                                      size="sm"
+                                      onClick={() =>
+                                        navigate(`/question/edit/${qstn.id}`)
+                                      }
+                                    >
+                                      <IconifyIcon
+                                        icon="mdi:pencil"
+                                        color="white"
+                                      />
+                                    </Button>
+                                    <Button
+                                      variant="danger"
+                                      size="sm"
+                                      onClick={() => handleDeleteClick(qstn.id)}
+                                    >
+                                      <IconifyIcon
+                                        icon="ri:delete-bin-4-fill"
+                                        color="white"
+                                      />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </tbody>
+                    </Table>
+                  )}
+                </Droppable>
+              </DragDropContext>
             )}
           </div>
         </Col>
       </Row>
 
-      {/* Delete Confirmation Modal */}
       <Modal show={showDeleteModal} onHide={handleDeleteModalClose} centered>
         <Modal.Header closeButton>
           <Modal.Title>Delete Question</Modal.Title>

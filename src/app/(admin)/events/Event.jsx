@@ -1,6 +1,5 @@
-import PageTitle from "../../../components/PageTitle";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
 import axiosInstance from "../../../globalFetch/api";
 import {
   Modal,
@@ -15,54 +14,69 @@ import {
   ModalTitle,
   Toast,
   ToastContainer,
+  ButtonGroup,
+  InputGroup,
+  FormControl,
+  Tabs,
+  Tab,
+  Badge,
 } from "react-bootstrap";
+import IconifyIcon from "@/components/wrappers/IconifyIcon";
+import EventAttendance from "./EventAttendance";
+import EventStats from "./EventStats";
+import PageTitle from "../../../components/PageTitle";
 
 const Event = () => {
-  const [events, setEvents] = useState([]); // State to store events
-  const [showUpdateModal, setShowUpdateModal] = useState(false); // State to control modal visibility
-  const [selectedEvent, setSelectedEvent] = useState(null); // State to store the selected event for update
-  const [showToast, setShowToast] = useState(false); // State to control toast visibility
-  const [toastMessage, setToastMessage] = useState(""); // State to store toast message
+  const [events, setEvents] = useState([]);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("events");
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         const response = await axiosInstance.get("/admin/get-events");
         if (response.status === 200) {
-          setEvents(response.data.data); // Set the fetched events to state
-          console.log(response.data.data);
+          setEvents(response.data.data);
         }
       } catch (error) {
         console.error(error);
+        setToastMessage("Failed to load events");
+        setShowToast(true);
       }
     };
     fetchEvents();
   }, []);
 
-  // Function to handle the Update button click
   const handleUpdateClick = (event) => {
-    setSelectedEvent(event); // Set the selected event
-    setShowUpdateModal(true); // Show the modal
+    setSelectedEvent(event);
+    setShowUpdateModal(true);
   };
 
-  // Function to close the modal
+  const handleDeleteClick = (event) => {
+    setSelectedEvent(event);
+    setShowDeleteModal(true);
+  };
+
   const handleCloseModal = () => {
     setShowUpdateModal(false);
-    setSelectedEvent(null); // Reset the selected event
+    setShowDeleteModal(false);
+    setSelectedEvent(null);
   };
 
-  // Function to handle Save Changes
   const handleSaveChanges = async () => {
-    if (!selectedEvent) return; // Ensure an event is selected
+    if (!selectedEvent) return;
 
     try {
-      // Call the backend API to update the event status
       const response = await axiosInstance.patch(
         `/admin/status/event/${selectedEvent.id}`
       );
 
       if (response.status === 200) {
-        // Update the local state to reflect the changes
         setEvents((prevEvents) =>
           prevEvents.map((event) =>
             event.id === selectedEvent.id
@@ -70,25 +84,50 @@ const Event = () => {
               : event
           )
         );
-        setToastMessage("Event status updated successfully!");
-        setShowToast(true); // Show toast
+        setToastMessage("Event marked as completed!");
+        setShowToast(true);
       }
     } catch (error) {
       console.error("Error updating event status:", error);
       setToastMessage("Failed to update event status.");
-      setShowToast(true); // Show toast
+      setShowToast(true);
     } finally {
-      // Close the modal
-      setShowUpdateModal(false);
-      setSelectedEvent(null);
+      handleCloseModal();
     }
   };
 
-  return (
-    <div className="d-flex p-4">
-      <PageTitle title="Event" />
+  const handleDeleteEvent = async () => {
+    if (!selectedEvent) return;
 
-      {/* Toast Notification */}
+    try {
+      const response = await axiosInstance.delete(
+        `/admin/event/${selectedEvent.id}`
+      );
+
+      if (response.status === 200) {
+        setEvents((prevEvents) =>
+          prevEvents.filter((event) => event.id !== selectedEvent.id)
+        );
+        setToastMessage("Event deleted successfully!");
+        setShowToast(true);
+      }
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      setToastMessage("Failed to delete event.");
+      setShowToast(true);
+    } finally {
+      handleCloseModal();
+    }
+  };
+
+  const filteredEvents = events.filter((event) =>
+    event.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="p-4">
+      <PageTitle title="Event Management" />
+
       <ToastContainer position="top-end" className="p-3">
         <Toast
           onClose={() => setShowToast(false)}
@@ -96,157 +135,252 @@ const Event = () => {
           delay={3000}
           autohide
         >
-          <Toast.Header>
+          <Toast.Header className="bg-primary text-white">
             <strong className="me-auto">Notification</strong>
           </Toast.Header>
           <Toast.Body>{toastMessage}</Toast.Body>
         </Toast>
       </ToastContainer>
 
-      {/* Top Modal for Update */}
-      <Modal
-        show={showUpdateModal}
-        onHide={handleCloseModal}
-        dialogClassName="modal-top"
-      >
-        <ModalHeader closeButton>
-          <ModalTitle as="h4">Update Event</ModalTitle>
+      <Modal show={showUpdateModal} onHide={handleCloseModal} centered>
+        <ModalHeader closeButton className="bg-light">
+          <ModalTitle as="h5">Confirm Completion</ModalTitle>
         </ModalHeader>
         <ModalBody>
           {selectedEvent && (
             <div>
-              <p>The event is already finished?</p>
+              <p>
+                Are you sure you want to mark{" "}
+                <strong>"{selectedEvent.title}"</strong> as completed?
+              </p>
+              <p className="text-muted">
+                This will change the event status to "Finished".
+              </p>
             </div>
           )}
         </ModalBody>
         <ModalFooter>
-          <Button variant="light" onClick={handleCloseModal}>
-            Close
+          <Button variant="outline-secondary" onClick={handleCloseModal}>
+            Cancel
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleSaveChanges}
-            disabled={selectedEvent?.isFinished} // Disable if event is finished
-          >
-            Save Changes
+          <Button variant="primary" onClick={handleSaveChanges}>
+            Confirm
           </Button>
         </ModalFooter>
       </Modal>
 
-      <Row>
-        <Col xs={12}>
-          <div
-            style={{
-              width: "70vw",
-              background: "white",
-              border: "1px solid gray",
-              padding: 10,
-              borderRadius: 10,
-            }}
-          >
-            <Row className="d-flex justify-content-between align-items-center p-2">
-              <Col xs="auto">
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Search"
-                  style={{ width: "250px", borderRadius: 10 }}
-                />
-              </Col>
-              <Col xs="auto">
-                <Button
-                  type="button"
-                  variant="dark"
-                  style={{ padding: "10px 20px", borderRadius: 10 }}
-                  as={Link}
-                  to="/event/new" // Link to the event creation page
-                >
-                  New Event
-                </Button>
-              </Col>
-            </Row>
-
+      <Modal show={showDeleteModal} onHide={handleCloseModal} centered>
+        <ModalHeader closeButton className="bg-light">
+          <ModalTitle as="h5">Confirm Deletion</ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          {selectedEvent && (
             <div>
-              <div className="responsive-table-plugin">
-                <div className="table-rep-plugin">
-                  <div
-                    className="table-responsive"
-                    data-pattern="priority-columns"
-                  >
-                    <table
-                      id="tech-companies-1"
-                      className="table table-striped"
-                      style={{ width: "100%", textAlign: "center" }} // Stretch table and center text
-                    >
-                      <thead>
-                        <tr>
-                          <th style={{ textAlign: "center" }}>Title</th>
-                          <th style={{ textAlign: "center" }}>Event Date</th>
-                          <th style={{ textAlign: "center" }}>Place</th>
-                          <th style={{ textAlign: "center" }}>Timing</th>
-                          <th style={{ textAlign: "center" }}>Image</th>
-                          <th style={{ textAlign: "center" }}>Status</th>
-                          <th style={{ textAlign: "center" }}>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {events.map((event, idx) => (
-                          <tr key={idx}>
-                            <td style={{ verticalAlign: "middle" }}>
-                              {event.title}
-                            </td>
-                            <td style={{ verticalAlign: "middle" }}>
-                              {new Date(event.eventDate).toLocaleDateString()}
-                            </td>
-                            <td style={{ verticalAlign: "middle" }}>
-                              {event.place}
-                            </td>
-                            <td style={{ verticalAlign: "middle" }}>
-                              {event.timing}
-                            </td>
-                            <td style={{ verticalAlign: "middle" }}>
-                              {event.image ? (
-                                <img
-                                  src={event.image}
-                                  alt="Event Banner"
-                                  style={{
-                                    width: "50px",
-                                    height: "auto",
-                                    display: "block",
-                                    margin: "0 auto",
-                                    borderRadius: 2,
-                                  }} // Center image
-                                />
-                              ) : (
-                                "N/A"
-                              )}
-                            </td>
-                            <td style={{ verticalAlign: "middle" }}>
-                              {event.isFinished ? "Finished" : "Ongoing"}
-                            </td>
-                            <td style={{ verticalAlign: "middle" }}>
-                              <Button
-                                type="button"
-                                variant="outline-dark"
-                                className="me-2"
-                                style={{ borderRadius: 5, padding: "5px 10px" }}
-                                onClick={() => handleUpdateClick(event)} // Open modal on Update click
-                                disabled={event.isFinished} // Disable if event is finished
-                              >
-                                Update
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+              <p>
+                Are you sure you want to delete{" "}
+                <strong>"{selectedEvent.title}"</strong>?
+              </p>
+              <p className="text-danger">
+                This action cannot be undone and will permanently remove the
+                event.
+              </p>
             </div>
-          </div>
-        </Col>
-      </Row>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="outline-secondary" onClick={handleCloseModal}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDeleteEvent}>
+            Delete
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      <Tabs
+        activeKey={activeTab}
+        onSelect={(k) => setActiveTab(k)}
+        className="mb-3"
+      >
+        <Tab eventKey="events" title="Events Management">
+          <Card className="shadow-sm mt-3">
+            <CardBody>
+              <Row className="mb-4">
+                <Col md={6} className="mb-3 mb-md-0">
+                  <InputGroup>
+                    <FormControl
+                      placeholder="Search events..."
+                      aria-label="Search events"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="border-end-0"
+                    />
+                    <Button
+                      variant="outline-secondary"
+                      className="border-start-0"
+                    >
+                      <IconifyIcon icon="mdi:magnify" />
+                    </Button>
+                  </InputGroup>
+                </Col>
+                <Col md={6} className="text-md-end">
+                  <Button
+                    variant="primary"
+                    as={Link}
+                    to="/event/new"
+                    className="px-4"
+                  >
+                    <IconifyIcon icon="mdi:plus" className="me-2" />
+                    Create New Event
+                  </Button>
+                </Col>
+              </Row>
+
+              <div className="table-responsive">
+                <table className="table table-hover align-middle">
+                  <thead className="table-light">
+                    <tr>
+                      <th className="text-center">Title</th>
+                      <th className="text-center">Date</th>
+                      <th className="text-center">Location</th>
+                      <th className="text-center">Timing</th>
+                      <th className="text-center">Image</th>
+                      <th className="text-center">Status</th>
+                      <th className="text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEvents.length > 0 ? (
+                      filteredEvents.map((event) => (
+                        <tr key={event.id}>
+                          <td className="align-middle">{event.title}</td>
+                          <td className="align-middle">
+                            {new Date(event.eventDate).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              }
+                            )}
+                          </td>
+                          <td className="align-middle">{event.place}</td>
+                          <td className="align-middle">{event.timing}</td>
+                          <td className="align-middle">
+                            {event.image ? (
+                              <img
+                                src={event.image}
+                                alt="Event banner"
+                                className="rounded"
+                                style={{
+                                  width: "60px",
+                                  height: "60px",
+                                  objectFit: "cover",
+                                }}
+                              />
+                            ) : (
+                              <span className="text-muted">No image</span>
+                            )}
+                          </td>
+                          <td className="align-middle">
+                            <span
+                              className={`badge ${
+                                event.isFinished ? "bg-danger" : "bg-success"
+                              } p-2`}
+                            >
+                              {event.isFinished ? "Finished" : "Ongoing"}
+                            </span>
+                          </td>
+                          <td className="align-middle">
+                            <ButtonGroup>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                as={Link}
+                                to={`/event/edit/${event.id}`}
+                                className="me-2"
+                              >
+                                <IconifyIcon
+                                  icon="mdi:pencil"
+                                  className="me-1"
+                                />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="info"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedEvent(event);
+                                  setActiveTab("attendance");
+                                }}
+                                className="me-2"
+                              >
+                                <IconifyIcon
+                                  icon="mdi:attendance"
+                                  className="me-1"
+                                />
+                                Attendance
+                              </Button>
+                              <Button
+                                variant={
+                                  event.isFinished ? "secondary" : "warning"
+                                }
+                                size="sm"
+                                onClick={() => handleUpdateClick(event)}
+                                disabled={event.isFinished}
+                                className="me-2"
+                              >
+                                <IconifyIcon
+                                  icon="mdi:check-circle"
+                                  className="me-1"
+                                />
+                                {event.isFinished ? "Completed" : "Complete"}
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDeleteClick(event)}
+                              >
+                                <IconifyIcon
+                                  icon="mdi:trash"
+                                  className="me-1"
+                                />
+                                Delete
+                              </Button>
+                            </ButtonGroup>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="7" className="text-center py-4">
+                          {searchTerm
+                            ? "No events match your search"
+                            : "No events found"}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardBody>
+          </Card>
+        </Tab>
+        <Tab eventKey="attendance" title="Attendance Tracking">
+          {selectedEvent ? (
+            <EventAttendance eventId={selectedEvent.id} />
+          ) : (
+            <Card className="shadow-sm mt-3">
+              <CardBody className="text-center py-5">
+                <h5>Please select an event from the Events Management tab</h5>
+              </CardBody>
+            </Card>
+          )}
+        </Tab>
+        {/* <Tab eventKey="stats" title="Event Statistics">
+          <EventStats />
+        </Tab> */}
+      </Tabs>
     </div>
   );
 };

@@ -1,3 +1,4 @@
+// Airport.js
 import PageTitle from "../../../components/PageTitle";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -146,14 +147,18 @@ const Airport = () => {
                       </td>
                       <td style={{ verticalAlign: "middle" }}>
                         <Button
-                          type="button"
+                          variant="primary"
+                          className="me-2"
+                          as={Link}
+                          to={`/airport/edit/${airport.id}`}
+                        >
+                          <IconifyIcon icon="mdi:pencil" />
+                        </Button>
+                        <Button
                           variant="danger"
                           onClick={() => handleDeleteClick(airport.id)}
                         >
-                          <IconifyIcon
-                            color="white"
-                            icon="ri:delete-bin-4-fill"
-                          />
+                          <IconifyIcon icon="ri:delete-bin-4-fill" />
                         </Button>
                       </td>
                     </tr>

@@ -14,7 +14,7 @@ const AppRouter = (props) => {
       {(appRoutes || []).map((route, idx) => (
         <Route
           key={idx + route.name}
-          path={route.path}
+          path={route.path} 
           element={
             isAuthenticated ? (
               <AdminLayout {...props}>{route.element}</AdminLayout>

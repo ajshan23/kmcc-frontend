@@ -30,7 +30,6 @@ const GoldProgramsList = () => {
     limit: 10,
     total: 0,
   });
-  console.log("ethy");
 
   const navigate = useNavigate();
 
@@ -58,16 +57,18 @@ const GoldProgramsList = () => {
     fetchPrograms();
   }, [pagination.page]);
 
-  const handleEndProgram = async (programId) => {
+  const handleEndProgram = async () => {
     try {
-      await axiosInstance.post(`/gold/end`, { programId });
+      await axiosInstance.post(`/gold/end`, { programId: selectedProgram.id });
       setToastMessage("Program ended successfully");
       setShowToast(true);
+      setShowModal(false);
       fetchPrograms();
     } catch (error) {
       console.error("Error ending program:", error);
       setToastMessage(error.response?.data?.message || "Failed to end program");
       setShowToast(true);
+      setShowModal(false);
     }
   };
 
@@ -75,10 +76,38 @@ const GoldProgramsList = () => {
     setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
+  const openConfirmationModal = (program) => {
+    setSelectedProgram(program);
+    setShowModal(true);
+  };
+
   return (
     <div className="p-4">
       <PageTitle title="Gold Investment Programs" />
 
+      {/* Confirmation Modal */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Program Termination</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to end the program "{selectedProgram?.name}"?
+          <br />
+          <br />
+          This action cannot be undone and will prevent any further investments
+          in this program.
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleEndProgram}>
+            <IconifyIcon icon="mdi:stop" /> End Program
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Toast Notification */}
       <Toast
         onClose={() => setShowToast(false)}
         show={showToast}
@@ -145,12 +174,12 @@ const GoldProgramsList = () => {
                         >
                           <IconifyIcon icon="mdi:eye" />
                         </Button>
-                        {program.isActive && (
+                        {(program.isActive)&& (
                           <Button
                             size="sm"
                             variant="warning"
                             className="me-2"
-                            onClick={() => handleEndProgram(program.id)}
+                            onClick={() => openConfirmationModal(program)}
                           >
                             <IconifyIcon icon="mdi:stop" />
                           </Button>

@@ -74,13 +74,13 @@ export const MENU_ITEMS = [
     url: "/membership",
   },
   {
-    key: "Exclusive members",
+    key: "KMCC Dt. Committee",
     icon: "ri:folder-user-line",
     label: "Exlcusive Members",
     url: "/exclusive-members",
   },
   {
-    key: "Subwing",
+    key: "Our Subwings",
     icon: "ri:folder-user-line",
     label: "Sub wing",
     url: "/sub-wing",
@@ -98,13 +98,13 @@ export const MENU_ITEMS = [
     url: "/book",
   },
   {
-    key: "Committee",
+    key: "Constituency Committees",
     icon: "ri:folder-user-line",
     label: "Committee",
     url: "/constitution-committees",
   },
   {
-    key: "Investment",
+    key: "Longterm Insvestement",
     icon: "ri:folder-user-line",
     label: "Investment",
     url: "/investments",

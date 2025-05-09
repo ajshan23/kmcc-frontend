@@ -1,7 +1,7 @@
 import axios from "axios";
 //http://13.203.184.112:3000/api
 const axiosInstance = axios.create({
-  baseURL: "http://mytest.igniteway.in/api", // Your backend base URL
+  baseURL: "https://mytest.igniteway.in/api", // Your backend base URL
   headers: {
     "Content-Type": "application/json", // Default header
   },

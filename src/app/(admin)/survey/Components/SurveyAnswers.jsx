@@ -1,5 +1,5 @@
 import PageTitle from "../../../../components/PageTitle";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axiosInstance from "../../../../globalFetch/api";
 import {
@@ -28,6 +28,7 @@ const SurveyAnswers = () => {
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [activeAccordion, setActiveAccordion] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (surveyId) {
@@ -49,6 +50,38 @@ const SurveyAnswers = () => {
       console.error("Error fetching survey answers:", error);
       setToastMessage("Failed to fetch survey answers");
       setShowToast(true);
+    }
+  };
+
+  const handleExport = async () => {
+    if (!surveyId) return;
+
+    setIsExporting(true);
+    try {
+      const response = await axiosInstance.get(`/survey/export/${surveyId}`, {
+        responseType: "blob", // Important for file downloads
+      });
+
+      // Create a download link for the blob
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `survey_${surveyId}_answers.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      setToastMessage("Export started successfully");
+      setShowToast(true);
+    } catch (error) {
+      console.error("Error exporting survey answers:", error);
+      setToastMessage("Failed to export survey answers");
+      setShowToast(true);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -90,16 +123,28 @@ const SurveyAnswers = () => {
               </div>
               <Button
                 variant="outline-primary"
-                as={Link}
-                to={`/survey/answers/${surveyId}/export`}
+                onClick={handleExport}
+                disabled={isExporting}
               >
-                Export Answers
+                {isExporting ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                    Exporting...
+                  </>
+                ) : (
+                  "Export Answers"
+                )}
               </Button>
             </div>
           </Card.Body>
         </Card>
       )}
 
+      {/* Rest of your component remains the same */}
       <Row>
         <Col xs={12} md={6}>
           <h4 className="mb-3">Individual Responses</h4>

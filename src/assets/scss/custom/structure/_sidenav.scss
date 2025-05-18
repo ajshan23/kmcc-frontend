@@ -80,7 +80,7 @@ html[data-bs-theme="dark"] {
   position: fixed;
   width: $leftbar-width;
   min-width: $leftbar-width;
-  background: $menu-bg;
+  background: #ffff;
   box-shadow: var(--#{$prefix}box-shadow);
   transition: $transition-base;
 
@@ -299,7 +299,7 @@ html[data-sidenav-size="condensed"] {
 
       .logo {
         z-index: 1;
-        background: $menu-bg;
+        background: #fff;
 
         span.logo-lg {
           display: none;
@@ -372,7 +372,7 @@ html[data-sidenav-size="condensed"] {
             .side-nav-link {
               position: relative;
               // color: $white;
-              background: $menu-condensed-link-bg;
+              background: #fff;
               width: $leftbar-width;
 
               span {
@@ -397,7 +397,7 @@ html[data-sidenav-size="condensed"] {
                 display: block !important;
                 left: $leftbar-width-sm;
                 position: absolute;
-                background: $menu-bg;
+                background: #fff;
                 box-shadow: $box-shadow-sm;
                 width: calc(#{$leftbar-width} - #{$leftbar-width-sm});
 

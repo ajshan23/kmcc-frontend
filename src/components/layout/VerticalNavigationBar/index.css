@@ -1,0 +1,204 @@
+/* ============================================= */
+/* Light Theme Sidebar Styles */
+/* ============================================= */
+
+.light-sidebar {
+    background: #ffffff;
+    border-right: 1px solid #f0f0f0;
+    box-shadow: 0 0 35px 0 rgba(154, 161, 171, 0.15);
+  }
+  
+  /* ============================================= */
+  /* Logo Box Styles */
+  /* ============================================= */
+  
+  .light-sidebar .logo-box {
+    background: #ffffff !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 70px;
+  }
+  
+  .light-sidebar .logo-box a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .light-sidebar .logo-box img {
+    max-height: 40px;
+    width: auto;
+    transition: all 0.3s ease;
+  }
+  
+  .light-sidebar .logo-box:hover img {
+    transform: scale(1.05);
+  }
+  
+  /* ============================================= */
+  /* Scrollbar Styles */
+  /* ============================================= */
+  
+  .light-scrollbar .simplebar-track {
+    background: rgba(233, 236, 239, 0.5);
+  }
+  
+  .light-scrollbar .simplebar-scrollbar:before {
+    background: rgba(173, 181, 189, 0.5);
+  }
+  
+  /* ============================================= */
+  /* Menu Item Base Styles */
+  /* ============================================= */
+  
+  .light-sidebar .side-nav {
+    background: transparent;
+    padding: 0.5rem;
+  }
+  
+  .light-sidebar .side-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    margin: 2px 0;
+    transition: all 0.3s ease;
+    color: #000000;
+    text-decoration: none;
+  }
+  
+  .light-sidebar .side-nav-link .menu-icon {
+    font-size: 1.25rem;
+    color: #000000;
+    transition: inherit;
+  }
+  
+  .light-sidebar .side-nav-link .menu-text {
+    margin-left: 0.75rem;
+    color: #000000;
+    transition: inherit;
+  }
+  
+  .light-sidebar .side-nav-link .arrow-icon {
+    margin-left: auto;
+    color: #000000;
+    transition: all 0.2s ease;
+  }
+  
+  .light-sidebar .side-nav-link .arrow-icon.rotate-90 {
+    transform: rotate(90deg);
+  }
+  
+  /* ============================================= */
+  /* Menu Item States */
+  /* ============================================= */
+  
+  /* Hover State */
+  .light-sidebar .side-nav-link:hover {
+    background: rgba(59, 93, 231, 0.08);
+    transform: translateX(4px);
+  }
+  
+  .light-sidebar .side-nav-link:hover .menu-text,
+  .light-sidebar .side-nav-link:hover .menu-icon,
+  .light-sidebar .side-nav-link:hover .arrow-icon {
+    color: #3b5de7;
+  }
+  
+  /* Active State */
+  .light-sidebar .side-nav-link.active {
+    background: rgba(59, 93, 231, 0.1);
+    font-weight: 500;
+  }
+  
+  .light-sidebar .side-nav-link.active .menu-text,
+  .light-sidebar .side-nav-link.active .menu-icon,
+  .light-sidebar .side-nav-link.active .arrow-icon {
+    color: #3b5de7;
+  }
+  
+  /* ============================================= */
+  /* Submenu Styles */
+  /* ============================================= */
+  
+  .light-sidebar .side-nav-second-level {
+    background: rgba(248, 249, 250, 0.8);
+    margin: 0.25rem 0;
+    padding-left: 0.5rem;
+    border-radius: 4px;
+  }
+  
+  .light-sidebar .side-nav-second-level .side-nav-link {
+    padding-left: 2.5rem;
+  }
+  
+  /* ============================================= */
+  /* Section Titles */
+  /* ============================================= */
+  
+  .light-sidebar .side-nav-title {
+    color: #6c757d;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1rem 1rem 0.5rem;
+    margin-top: 1rem;
+  }
+  
+  .light-sidebar .side-nav-title:first-child {
+    margin-top: 0;
+  }
+  
+  /* ============================================= */
+  /* Badges */
+  /* ============================================= */
+  
+  .light-sidebar .badge {
+    background-color: #f0f0f0;
+    color: #000000;
+    font-size: 0.65rem;
+    padding: 0.25rem 0.4rem;
+    font-weight: 500;
+  }
+  
+  /* ============================================= */
+  /* Animations */
+  /* ============================================= */
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .light-sidebar .side-nav-item {
+    animation: fadeIn 0.3s ease forwards;
+  }
+  
+  .hover-scale {
+    transform: scale(1.02);
+    transition: transform 0.2s ease;
+  }
+  
+  /* ============================================= */
+  /* Responsive Adjustments */
+  /* ============================================= */
+  
+  @media (max-width: 992px) {
+    .light-sidebar {
+      box-shadow: none;
+      border-right: none;
+    }
+    
+    .light-sidebar .logo-box {
+      height: 60px;
+    }
+    
+    .light-sidebar .side-nav-link {
+      padding: 0.75rem 1rem;
+    }
+  }

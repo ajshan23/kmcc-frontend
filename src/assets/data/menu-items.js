@@ -57,12 +57,7 @@ export const MENU_ITEMS = [
     url: "/survey",
   },
   {
-    key: "Users",
-    label: "Users",
-    isTitle: true,
-  },
-  {
-    key: "Users",
+    key: "users",
     icon: "ri:shield-user-fill",
     label: "Users",
     url: "/users/table",
@@ -109,6 +104,7 @@ export const MENU_ITEMS = [
     label: "Investment",
     url: "/investments",
   },
+
   // {
   //   key: "apps-kanban",
   //   icon: "ri:artboard-line",

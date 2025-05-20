@@ -11,6 +11,7 @@ import {
   FormControl,
   FormGroup,
   FormLabel,
+  Alert,
 } from "react-bootstrap";
 import axiosInstance from "../../../globalFetch/api";
 import PageTitle from "../../../components/PageTitle";
@@ -24,6 +25,7 @@ const UserEdit = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [formData, setFormData] = useState({
     // User fields
     name: "",
@@ -31,6 +33,8 @@ const UserEdit = () => {
     phoneNumber: "",
     isAdmin: false,
     isSuperAdmin: false,
+    password: "",
+    confirmPassword: "",
     // Profile fields
     occupation: "",
     employer: "",
@@ -57,6 +61,8 @@ const UserEdit = () => {
           phoneNumber: userData.phoneNumber || "",
           isAdmin: userData.isAdmin || false,
           isSuperAdmin: userData.isSuperAdmin || false,
+          password: "",
+          confirmPassword: "",
           occupation: userData.profile?.occupation || "",
           employer: userData.profile?.employer || "",
           place: userData.profile?.place || "",
@@ -92,12 +98,30 @@ const UserEdit = () => {
     e.preventDefault();
     setLoading(true);
 
+    // Validate passwords if password fields are shown and filled
+    if (
+      showPasswordFields &&
+      formData.password &&
+      formData.password !== formData.confirmPassword
+    ) {
+      setToastMessage("Passwords do not match");
+      setShowToast(true);
+      setLoading(false);
+      return;
+    }
+
     const formDataToSend = new FormData();
     formDataToSend.append("name", formData.name);
     formDataToSend.append("email", formData.email);
     formDataToSend.append("phoneNumber", formData.phoneNumber);
     formDataToSend.append("isAdmin", formData.isAdmin);
     formDataToSend.append("isSuperAdmin", formData.isSuperAdmin);
+
+    // Only append password if it's provided
+    if (formData.password) {
+      formDataToSend.append("password", formData.password);
+    }
+
     formDataToSend.append("occupation", formData.occupation);
     formDataToSend.append("employer", formData.employer);
     formDataToSend.append("place", formData.place);
@@ -148,6 +172,18 @@ const UserEdit = () => {
         setProfileImagePreview(event.target.result);
       };
       reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  const togglePasswordFields = () => {
+    setShowPasswordFields(!showPasswordFields);
+    // Clear password fields when hiding them
+    if (showPasswordFields) {
+      setFormData((prev) => ({
+        ...prev,
+        password: "",
+        confirmPassword: "",
+      }));
     }
   };
 
@@ -261,6 +297,52 @@ const UserEdit = () => {
                     </FormGroup>
                   </Col>
                 </Row>
+
+                <div className="mb-3">
+                  <Button
+                    variant="link"
+                    onClick={togglePasswordFields}
+                    className="p-0"
+                  >
+                    {showPasswordFields
+                      ? "Hide Password Fields"
+                      : "Change Password"}
+                  </Button>
+                </div>
+
+                {showPasswordFields && (
+                  <>
+                    <Alert variant="info" className="mb-3">
+                      Leave password fields blank to keep current password
+                    </Alert>
+                    <Row>
+                      <Col md={6}>
+                        <FormGroup className="mb-3">
+                          <FormLabel>New Password</FormLabel>
+                          <FormControl
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder="Enter new password"
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup className="mb-3">
+                          <FormLabel>Confirm Password</FormLabel>
+                          <FormControl
+                            type="password"
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            placeholder="Confirm new password"
+                          />
+                        </FormGroup>
+                      </Col>
+                    </Row>
+                  </>
+                )}
 
                 <h5 className="mt-4">Professional Information</h5>
                 <Row>

@@ -1,5 +1,5 @@
 import axios from "axios";
-//http://13.203.184.112:3000/api
+//https://kmcc.gosneakers.in/api
 const axiosInstance = axios.create({
   baseURL: "https://kmcc.gosneakers.in/api", // Your backend base URL
   headers: {

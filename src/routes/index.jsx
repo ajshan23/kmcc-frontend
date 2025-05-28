@@ -30,6 +30,9 @@ const BannerUpdate = lazy(() =>
 const SubWingList = lazy(() => import("@/app/(admin)/subwing/SubWingList"));
 const SubWingForm = lazy(() => import("@/app/(admin)/subwing/SubWingForm"));
 
+//TravelerList
+const TravelerList = lazy(() => import("@/app/(admin)/traveler/TravelerList"));
+
 const SubWingDetails = lazy(() =>
   import("@/app/(admin)/subwing/SubWingDetails")
 );
@@ -913,7 +916,7 @@ const committeeRoutes = [
     name: "CommitteeDetails",
   },
   {
-    path: "/constitution-committees/members/edit/:memberId",
+    path: "/constitution-committees/:committeeId/members/edit/:memberId",
     element: <MemberEditForm />,
     name: "MemberEditForm",
   },
@@ -974,6 +977,13 @@ const subwingRoutes = [
   },
 ];
 
+const travelerRoutes = [
+  {
+    path: "/traveler",
+    name: "Traveler",
+    element: <TravelerList />,
+  },
+];
 // auth
 const authRoutes = [
   {
@@ -1054,5 +1064,6 @@ export const appRoutes = [
   ...bookRoutes,
   ...committeeRoutes,
   ...longInvestment,
+  ...travelerRoutes,
 ];
 export const publicRoutes = [...authRoutes, ...otherPublicRoutes];

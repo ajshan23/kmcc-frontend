@@ -1,5 +1,5 @@
 import PageTitle from "../../../components/PageTitle";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axiosInstance from "../../../globalFetch/api";
 import {
@@ -15,6 +15,7 @@ import {
   Tab,
   Tabs,
   Table,
+  Spinner,
 } from "react-bootstrap";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
 import smLogo from "@/assets/images/logo-sm.png";
@@ -22,9 +23,11 @@ import MemberForm from "./MemberForm";
 
 const CommitteeDetails = () => {
   const { committeeId } = useParams();
+  const navigate = useNavigate();
   const [committee, setCommittee] = useState(null);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
@@ -45,7 +48,9 @@ const CommitteeDetails = () => {
         setMembers(membersRes.data.data);
       } catch (error) {
         console.error("Error fetching committee details:", error);
-        setToastMessage("Failed to load committee details");
+        setToastMessage(
+          error.response?.data?.message || "Failed to load committee details"
+        );
         setShowToast(true);
       } finally {
         setLoading(false);
@@ -62,9 +67,19 @@ const CommitteeDetails = () => {
     setShowToast(true);
   };
 
+  const handleMemberUpdated = (updatedMember) => {
+    setMembers(
+      members.map((m) => (m.id === updatedMember.id ? updatedMember : m))
+    );
+    setToastMessage("Member updated successfully");
+    setShowToast(true);
+  };
+
   const handleDeleteMember = async () => {
     if (!selectedMember) return;
+
     try {
+      setDeleting(true);
       await axiosInstance.delete(
         `/constitution-committees/members/${selectedMember.id}`
       );
@@ -73,16 +88,23 @@ const CommitteeDetails = () => {
       setShowToast(true);
     } catch (error) {
       console.error("Error deleting member:", error);
-      setToastMessage("Failed to delete member");
+      setToastMessage(
+        error.response?.data?.message || "Failed to delete member"
+      );
       setShowToast(true);
     } finally {
+      setDeleting(false);
       setShowDeleteMemberModal(false);
       setSelectedMember(null);
     }
   };
 
   if (loading) {
-    return <div className="d-flex justify-content-center p-5">Loading...</div>;
+    return (
+      <div className="d-flex justify-content-center p-5">
+        <Spinner animation="border" variant="primary" />
+      </div>
+    );
   }
 
   if (!committee) {
@@ -218,8 +240,11 @@ const CommitteeDetails = () => {
                                 variant="primary"
                                 size="sm"
                                 className="me-2"
-                                as={Link}
-                                to={`/constitution-committees/members/edit/${member.id}`}
+                                onClick={() =>
+                                  navigate(
+                                    `/constitution-committees/${committeeId}/members/edit/${member.id}`
+                                  )
+                                }
                               >
                                 <IconifyIcon icon="mdi:pencil" color="white" />
                               </Button>
@@ -265,7 +290,7 @@ const CommitteeDetails = () => {
 
       <Modal
         show={showDeleteMemberModal}
-        onHide={() => setShowDeleteMemberModal(false)}
+        onHide={() => !deleting && setShowDeleteMemberModal(false)}
         centered
       >
         <Modal.Header closeButton>
@@ -279,11 +304,30 @@ const CommitteeDetails = () => {
           <Button
             variant="secondary"
             onClick={() => setShowDeleteMemberModal(false)}
+            disabled={deleting}
           >
             Cancel
           </Button>
-          <Button variant="danger" onClick={handleDeleteMember}>
-            Delete
+          <Button
+            variant="danger"
+            onClick={handleDeleteMember}
+            disabled={deleting}
+          >
+            {deleting ? (
+              <>
+                <Spinner
+                  as="span"
+                  animation="border"
+                  size="sm"
+                  role="status"
+                  aria-hidden="true"
+                  className="me-1"
+                />
+                Deleting...
+              </>
+            ) : (
+              "Delete"
+            )}
           </Button>
         </Modal.Footer>
       </Modal>

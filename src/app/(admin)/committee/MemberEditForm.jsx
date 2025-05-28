@@ -3,11 +3,18 @@ import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../../../globalFetch/api";
 import MemberForm from "./MemberForm";
 import PageTitle from "../../../components/PageTitle";
-import { Card, CardBody, Toast, ToastHeader, ToastBody } from "react-bootstrap";
+import {
+  Card,
+  CardBody,
+  Toast,
+  ToastHeader,
+  ToastBody,
+  Spinner,
+} from "react-bootstrap";
 import smLogo from "@/assets/images/logo-sm.png";
 
 const MemberEditForm = () => {
-  const { memberId } = useParams();
+  const { committeeId, memberId } = useParams();
   const navigate = useNavigate();
   const [member, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,22 +24,28 @@ const MemberEditForm = () => {
   useEffect(() => {
     const fetchMember = async () => {
       try {
+        setLoading(true);
         const response = await axiosInstance.get(
           `/constitution-committees/members/${memberId}`
         );
         if (response.status === 200) {
           setMember(response.data.data);
+        } else {
+          throw new Error("Failed to fetch member");
         }
       } catch (error) {
         console.error("Error fetching member:", error);
-        setToastMessage("Failed to load member data");
+        setToastMessage(
+          error.response?.data?.message || "Failed to load member data"
+        );
         setShowToast(true);
+        navigate(`/constitution-committees/${committeeId}`);
       } finally {
         setLoading(false);
       }
     };
     fetchMember();
-  }, [memberId]);
+  }, [memberId, committeeId, navigate]);
 
   const handleSuccess = (updatedMember) => {
     setToastMessage("Member updated successfully");
@@ -43,7 +56,11 @@ const MemberEditForm = () => {
   };
 
   if (loading) {
-    return <div className="d-flex justify-content-center p-5">Loading...</div>;
+    return (
+      <div className="d-flex justify-content-center p-5">
+        <Spinner animation="border" variant="primary" />
+      </div>
+    );
   }
 
   if (!member) {
@@ -73,12 +90,10 @@ const MemberEditForm = () => {
       <Card>
         <CardBody>
           <MemberForm
-            committeeId={member.committeeId}
+            committeeId={committeeId}
             initialData={member}
             onSuccess={handleSuccess}
-            onCancel={() =>
-              navigate(`/constitution-committees/${member.committeeId}`)
-            }
+            onCancel={() => navigate(`/constitution-committees/${committeeId}`)}
           />
         </CardBody>
       </Card>

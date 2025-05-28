@@ -81,9 +81,9 @@ export const MENU_ITEMS = [
     url: "/sub-wing",
   },
   {
-    key: "Gold investment program",
+    key: "GAIN Program",
     icon: "ri:folder-user-line",
-    label: "Gold investment program",
+    label: "GAIN Program",
     url: "/gold-programs",
   },
   {
@@ -101,7 +101,7 @@ export const MENU_ITEMS = [
   {
     key: "Longterm Insvestement",
     icon: "ri:folder-user-line",
-    label: "Investment",
+    label: "GOAL Project",
     url: "/investments",
   },
 

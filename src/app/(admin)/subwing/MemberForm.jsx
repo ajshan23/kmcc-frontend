@@ -7,19 +7,30 @@ import {
   Card,
   CardBody,
 } from "react-bootstrap";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import axiosInstance from "../../../globalFetch/api";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
 
-const MemberForm = ({ subWingId, onSuccess, onCancel }) => {
-  const [name, setName] = useState("");
-  const [position, setPosition] = useState("");
+const MemberForm = ({ subWingId, onSuccess, onCancel, member }) => {
+  const [name, setName] = useState(member?.name || "");
+  const [position, setPosition] = useState(member?.position || "");
   const [imageSrc, setImageSrc] = useState(null);
   const [croppedImage, setCroppedImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const cropperRef = useRef(null);
+
+  useEffect(() => {
+    if (member) {
+      setName(member.name);
+      setPosition(member.position);
+      if (member.image) {
+        setImageSrc(member.image);
+        setCroppedImage(member.image);
+      }
+    }
+  }, [member]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -54,27 +65,29 @@ const MemberForm = ({ subWingId, onSuccess, onCancel }) => {
     const formData = new FormData();
     formData.append("name", name);
     formData.append("position", position);
-    if (croppedImage) {
+    if (croppedImage && (!member || croppedImage !== member.image)) {
       formData.append("image", croppedImage, "member.jpg");
     }
 
     try {
-      const response = await axiosInstance.post(
-        `/sub-wing/${subWingId}/members`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const url = member
+        ? `/sub-wing/${subWingId}/members/${member.id}`
+        : `/sub-wing/${subWingId}/members`;
 
-      if (response.status === 201) {
+      const method = member ? "put" : "post";
+
+      const response = await axiosInstance[method](url, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.status === (member ? 200 : 201)) {
         onSuccess(response.data.data);
       }
     } catch (error) {
-      console.error("Error adding member:", error);
-      alert("Failed to add member");
+      console.error("Error saving member:", error);
+      alert(`Failed to ${member ? "update" : "add"} member`);
     } finally {
       setIsLoading(false);
     }
@@ -137,7 +150,11 @@ const MemberForm = ({ subWingId, onSuccess, onCancel }) => {
             <div className="mb-3">
               <h6>Cropped Preview:</h6>
               <img
-                src={URL.createObjectURL(croppedImage)}
+                src={
+                  typeof croppedImage === "string"
+                    ? croppedImage
+                    : URL.createObjectURL(croppedImage)
+                }
                 alt="Cropped preview"
                 style={{ maxHeight: "200px" }}
               />
@@ -158,8 +175,10 @@ const MemberForm = ({ subWingId, onSuccess, onCancel }) => {
                 role="status"
                 aria-hidden="true"
               ></span>
-              Adding...
+              {member ? "Updating..." : "Adding..."}
             </>
+          ) : member ? (
+            "Update Member"
           ) : (
             "Add Member"
           )}

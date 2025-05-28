@@ -26,6 +26,7 @@ const EventForm = () => {
   const [croppedImage, setCroppedImage] = useState(null);
   const [isLoading, setIsLoading] = useState(!!id);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
 
   const [formData, setFormData] = useState({
     title: "",
@@ -97,13 +98,21 @@ const EventForm = () => {
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImageSrc(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.match("image.*")) {
+      setToastMessage("Please upload an image file");
+      setShowToast(true);
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageSrc(reader.result);
+      setValidationErrors((prev) => ({ ...prev, image: null }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const onCrop = () => {
@@ -118,6 +127,7 @@ const EventForm = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setValidationErrors((prev) => ({ ...prev, [name]: null }));
   };
 
   const addHighlightField = () => {
@@ -142,11 +152,82 @@ const EventForm = () => {
       ...prev,
       highlights: updatedHighlights,
     }));
+    setValidationErrors((prev) => ({ ...prev, highlights: null }));
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    let isValid = true;
+
+    if (!formData.title.trim()) {
+      errors.title = "Event title is required";
+      isValid = false;
+    }
+
+    if (!formData.place.trim()) {
+      errors.place = "Event place is required";
+      isValid = false;
+    }
+
+    if (!formData.eventType) {
+      errors.eventType = "Event type is required";
+      isValid = false;
+    }
+
+    if (!formData.eventDate) {
+      errors.eventDate = "Event date is required";
+      isValid = false;
+    }
+
+    if (!formData.startTime) {
+      errors.startTime = "Start time is required";
+      isValid = false;
+    }
+
+    if (!formData.endTime) {
+      errors.endTime = "End time is required";
+      isValid = false;
+    }
+
+    // Validate time sequence
+    if (formData.startTime && formData.endTime) {
+      const start = new Date(`2000-01-01T${formData.startTime}`);
+      const end = new Date(`2000-01-01T${formData.endTime}`);
+      if (start >= end) {
+        errors.endTime = "End time must be after start time";
+        isValid = false;
+      }
+    }
+
+    // Validate highlights
+    if (
+      formData.highlights.length === 0 ||
+      formData.highlights.some((h) => !h.trim())
+    ) {
+      errors.highlights = "All highlights must be filled";
+      isValid = false;
+    }
+
+    // Validate image for new events
+    if (!id && !croppedImage && !imageSrc) {
+      errors.image = "Event image is required";
+      isValid = false;
+    }
+
+    setValidationErrors(errors);
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    if (!validateForm()) {
+      setIsSubmitting(false);
+      setToastMessage("Please fill all required fields correctly");
+      setShowToast(true);
+      return;
+    }
 
     try {
       const formDataToSend = new FormData();
@@ -199,7 +280,11 @@ const EventForm = () => {
       }
     } catch (error) {
       console.error("Error saving event:", error);
-      setToastMessage(`Failed to ${id ? "update" : "create"} event`);
+      setToastMessage(
+        `Failed to ${id ? "update" : "create"} event: ${
+          error.response?.data?.message || error.message
+        }`
+      );
       setShowToast(true);
     } finally {
       setIsSubmitting(false);
@@ -243,16 +328,24 @@ const EventForm = () => {
                 <Row>
                   <Col lg={9}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Event Image (362x472)</Form.Label>
+                      <Form.Label>
+                        Event Image (362x472){" "}
+                        {!id && <span className="text-danger">*</span>}
+                      </Form.Label>
                       <Form.Control
                         type="file"
                         accept="image/*"
                         onChange={handleImageUpload}
+                        isInvalid={!!validationErrors.image}
+                        required={!id ? !imageSrc : false}
                       />
+                      <Form.Control.Feedback type="invalid">
+                        {validationErrors.image}
+                      </Form.Control.Feedback>
                       <Form.Text className="text-muted">
                         {id
                           ? "Upload new image to replace existing one"
-                          : "Upload event image"}
+                          : "Upload event image (required)"}
                       </Form.Text>
                     </Form.Group>
 
@@ -333,7 +426,9 @@ const EventForm = () => {
 
                   <Col lg={3}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Event Title</Form.Label>
+                      <Form.Label>
+                        Event Title <span className="text-danger">*</span>
+                      </Form.Label>
                       <Form.Control
                         type="text"
                         name="title"
@@ -341,11 +436,17 @@ const EventForm = () => {
                         onChange={handleInputChange}
                         placeholder="Enter event title"
                         required
+                        isInvalid={!!validationErrors.title}
                       />
+                      <Form.Control.Feedback type="invalid">
+                        {validationErrors.title}
+                      </Form.Control.Feedback>
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                      <Form.Label>Place</Form.Label>
+                      <Form.Label>
+                        Place <span className="text-danger">*</span>
+                      </Form.Label>
                       <Form.Control
                         type="text"
                         name="place"
@@ -353,16 +454,24 @@ const EventForm = () => {
                         onChange={handleInputChange}
                         placeholder="Enter event place"
                         required
+                        isInvalid={!!validationErrors.place}
                       />
+                      <Form.Control.Feedback type="invalid">
+                        {validationErrors.place}
+                      </Form.Control.Feedback>
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                      <Form.Label>Event Type</Form.Label>
+                      <Form.Label>
+                        Event Type <span className="text-danger">*</span>
+                      </Form.Label>
                       <Form.Control
                         as="select"
                         name="eventType"
                         value={formData.eventType}
                         onChange={handleInputChange}
+                        required
+                        isInvalid={!!validationErrors.eventType}
                       >
                         <option value="">Select event type</option>
                         <option value="meeting">Meeting</option>
@@ -371,43 +480,66 @@ const EventForm = () => {
                         <option value="social">Social Gathering</option>
                         <option value="other">Other</option>
                       </Form.Control>
+                      <Form.Control.Feedback type="invalid">
+                        {validationErrors.eventType}
+                      </Form.Control.Feedback>
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                      <Form.Label>Date</Form.Label>
+                      <Form.Label>
+                        Date <span className="text-danger">*</span>
+                      </Form.Label>
                       <Form.Control
                         type="date"
                         name="eventDate"
                         value={formData.eventDate}
                         onChange={handleInputChange}
                         required
+                        isInvalid={!!validationErrors.eventDate}
                       />
+                      <Form.Control.Feedback type="invalid">
+                        {validationErrors.eventDate}
+                      </Form.Control.Feedback>
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                      <Form.Label>Start Time</Form.Label>
+                      <Form.Label>
+                        Start Time <span className="text-danger">*</span>
+                      </Form.Label>
                       <Form.Control
                         type="time"
                         name="startTime"
                         value={formData.startTime}
                         onChange={handleInputChange}
                         required
+                        isInvalid={!!validationErrors.startTime}
                       />
+                      <Form.Control.Feedback type="invalid">
+                        {validationErrors.startTime}
+                      </Form.Control.Feedback>
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                      <Form.Label>End Time</Form.Label>
+                      <Form.Label>
+                        End Time <span className="text-danger">*</span>
+                      </Form.Label>
                       <Form.Control
                         type="time"
                         name="endTime"
                         value={formData.endTime}
                         onChange={handleInputChange}
                         required
+                        isInvalid={!!validationErrors.endTime}
                       />
+                      <Form.Control.Feedback type="invalid">
+                        {validationErrors.endTime}
+                      </Form.Control.Feedback>
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                      <Form.Label>Highlights</Form.Label>
+                      <Form.Label>
+                        Highlights <span className="text-danger">*</span>
+                      </Form.Label>
                       {formData.highlights.map((highlight, index) => (
                         <div
                           key={index}
@@ -420,6 +552,8 @@ const EventForm = () => {
                               updateHighlightField(index, e.target.value)
                             }
                             placeholder={`Highlight ${index + 1}`}
+                            required
+                            isInvalid={!!validationErrors.highlights}
                           />
                           <Button
                             variant="danger"
@@ -431,6 +565,9 @@ const EventForm = () => {
                           </Button>
                         </div>
                       ))}
+                      <Form.Control.Feedback type="invalid">
+                        {validationErrors.highlights}
+                      </Form.Control.Feedback>
                       <Button
                         variant="secondary"
                         className="w-100"

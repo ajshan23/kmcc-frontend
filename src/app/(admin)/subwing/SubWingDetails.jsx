@@ -28,6 +28,8 @@ const SubWingDetails = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [showEditMemberModal, setShowEditMemberModal] = useState(false);
+  const [editingMember, setEditingMember] = useState(null);
   const [activeTab, setActiveTab] = useState("details");
 
   useEffect(() => {
@@ -60,7 +62,20 @@ const SubWingDetails = () => {
     setShowToast(true);
   };
 
+  const handleMemberUpdated = (updatedMember) => {
+    setMembers(
+      members.map((m) => (m.id === updatedMember.id ? updatedMember : m))
+    );
+    setShowEditMemberModal(false);
+    setToastMessage("Member updated successfully");
+    setShowToast(true);
+  };
+
   const handleDeleteMember = async (memberId) => {
+    if (!window.confirm("Are you sure you want to delete this member?")) {
+      return;
+    }
+
     try {
       await axiosInstance.delete(`/sub-wing/${subWingId}/members/${memberId}`);
       setMembers(members.filter((m) => m.id !== memberId));
@@ -71,6 +86,11 @@ const SubWingDetails = () => {
       setToastMessage("Failed to delete member");
       setShowToast(true);
     }
+  };
+
+  const handleEditMember = (member) => {
+    setEditingMember(member);
+    setShowEditMemberModal(true);
   };
 
   if (loading) {
@@ -276,6 +296,14 @@ const SubWingDetails = () => {
                             </td>
                             <td>
                               <Button
+                                variant="primary"
+                                size="sm"
+                                className="me-2"
+                                onClick={() => handleEditMember(member)}
+                              >
+                                <IconifyIcon icon="mdi:pencil" color="white" />
+                              </Button>
+                              <Button
                                 variant="danger"
                                 size="sm"
                                 onClick={() => handleDeleteMember(member.id)}
@@ -308,6 +336,24 @@ const SubWingDetails = () => {
             subWingId={subWingId}
             onSuccess={handleMemberAdded}
             onCancel={() => setShowAddMemberModal(false)}
+          />
+        </Modal.Body>
+      </Modal>
+
+      <Modal
+        show={showEditMemberModal}
+        onHide={() => setShowEditMemberModal(false)}
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Member</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <MemberForm
+            subWingId={subWingId}
+            onSuccess={handleMemberUpdated}
+            onCancel={() => setShowEditMemberModal(false)}
+            member={editingMember}
           />
         </Modal.Body>
       </Modal>

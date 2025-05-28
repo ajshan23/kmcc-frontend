@@ -201,7 +201,7 @@ const MembershipForm = () => {
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Area Name</Form.Label>
+                  <Form.Label>Constituency</Form.Label>
                   <Form.Control
                     type="text"
                     name="areaName"
@@ -215,7 +215,7 @@ const MembershipForm = () => {
                 <div className="d-flex gap-2">
                   <Button
                     variant="secondary"
-                    onClick={() => navigate("/memberships")}
+                    onClick={() => navigate("/membership")}
                     disabled={loading}
                   >
                     Cancel

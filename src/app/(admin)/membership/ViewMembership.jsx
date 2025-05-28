@@ -149,7 +149,7 @@ const ViewMembership = () => {
                     <th style={{ textAlign: "center" }}>Name</th>
                     <th style={{ textAlign: "center" }}>Phone Number</th>
                     <th style={{ textAlign: "center" }}>Status</th>
-                    <th style={{ textAlign: "center" }}>Area Name</th>
+                    <th style={{ textAlign: "center" }}>Constituency</th>
                     <th style={{ textAlign: "center" }}>Actions</th>
                   </tr>
                 </thead>

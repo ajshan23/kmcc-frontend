@@ -6,8 +6,10 @@ import {
   Col,
   Card,
   CardBody,
+  Spinner,
+  Alert,
 } from "react-bootstrap";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import axiosInstance from "../../../globalFetch/api";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
 import Cropper from "react-cropper";
@@ -16,38 +18,66 @@ import "cropperjs/dist/cropper.css";
 const MemberForm = ({ committeeId, onSuccess, onCancel, initialData }) => {
   const [name, setName] = useState(initialData?.name || "");
   const [position, setPosition] = useState(initialData?.position || "");
-  const [imageSrc, setImageSrc] = useState(null);
+  const [imageSrc, setImageSrc] = useState(initialData?.image || null);
   const [croppedImage, setCroppedImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const cropperRef = useRef(null);
   const isEditMode = Boolean(initialData);
 
+  useEffect(() => {
+    if (initialData?.image) {
+      setImageSrc(initialData.image);
+    }
+  }, [initialData]);
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImageSrc(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.match("image.*")) {
+      setError("Please select an image file (JPEG, PNG, etc.)");
+      return;
     }
+
+    // Check file size (limit to 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image size should be less than 5MB");
+      return;
+    }
+
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageSrc(reader.result);
+    };
+    reader.onerror = () => {
+      setError("Failed to read image file");
+    };
+    reader.readAsDataURL(file);
   };
 
   const onCrop = () => {
     const cropper = cropperRef.current?.cropper;
     if (cropper) {
-      cropper.getCroppedCanvas().toBlob((blob) => {
-        setCroppedImage(blob);
-      });
+      cropper.getCroppedCanvas().toBlob(
+        (blob) => {
+          setCroppedImage(blob);
+        },
+        "image/jpeg",
+        0.8
+      ); // 80% quality
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     if (!name || !position) {
-      alert("Name and position are required");
+      setError("Name and position are required");
       setIsLoading(false);
       return;
     }
@@ -55,7 +85,13 @@ const MemberForm = ({ committeeId, onSuccess, onCancel, initialData }) => {
     const formData = new FormData();
     formData.append("name", name);
     formData.append("position", position);
-    if (croppedImage) {
+
+    // Only append image if it's new or changed
+    if (
+      croppedImage &&
+      (!initialData?.image ||
+        (initialData.image && typeof initialData.image === "string"))
+    ) {
       formData.append("image", croppedImage, "member.jpg");
     }
 
@@ -87,8 +123,11 @@ const MemberForm = ({ committeeId, onSuccess, onCancel, initialData }) => {
         onSuccess(response.data.data);
       }
     } catch (error) {
-      console.error("Error adding member:", error);
-      alert(`Failed to ${isEditMode ? "update" : "add"} member`);
+      console.error("Error saving member:", error);
+      setError(
+        error.response?.data?.message ||
+          `Failed to ${isEditMode ? "update" : "add"} member`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -96,6 +135,12 @@ const MemberForm = ({ committeeId, onSuccess, onCancel, initialData }) => {
 
   return (
     <Form onSubmit={handleSubmit}>
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+          {error}
+        </Alert>
+      )}
+
       <Row>
         <Col md={6}>
           <Form.Group className="mb-3">
@@ -167,11 +212,14 @@ const MemberForm = ({ committeeId, onSuccess, onCancel, initialData }) => {
         <Button variant="primary" type="submit" disabled={isLoading}>
           {isLoading ? (
             <>
-              <span
-                className="spinner-border spinner-border-sm me-1"
+              <Spinner
+                as="span"
+                animation="border"
+                size="sm"
                 role="status"
                 aria-hidden="true"
-              ></span>
+                className="me-1"
+              />
               {isEditMode ? "Updating..." : "Adding..."}
             </>
           ) : isEditMode ? (

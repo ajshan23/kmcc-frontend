@@ -24,7 +24,10 @@ const Test = lazy(() => import("@/app/(admin)/test/Test"));
 const BannerUpdate = lazy(() =>
   import("@/app/(admin)/banner/Components/BannerUpdate")
 );
-
+//NotificationList
+const NotificationList = lazy(() =>
+  import("@/app/(admin)/notification/NotificationList")
+);
 //SubWingList
 
 const SubWingList = lazy(() => import("@/app/(admin)/subwing/SubWingList"));
@@ -984,6 +987,14 @@ const travelerRoutes = [
     element: <TravelerList />,
   },
 ];
+
+const notificationRoutes = [
+  {
+    path: "/notification",
+    name: "NotificationList",
+    element: <NotificationList />,
+  },
+];
 // auth
 const authRoutes = [
   {
@@ -1065,5 +1076,6 @@ export const appRoutes = [
   ...committeeRoutes,
   ...longInvestment,
   ...travelerRoutes,
+  ...notificationRoutes,
 ];
 export const publicRoutes = [...authRoutes, ...otherPublicRoutes];

@@ -21,6 +21,12 @@ export const MENU_ITEMS = [
     url: "/Banner",
   },
   {
+    key: "Notification",
+    icon: "ri:notification-2-line",
+    label: "Notification",
+    url: "/notification",
+  },
+  {
     key: "Event",
     icon: "ri:calendar-event-line",
     label: "Event",
@@ -49,6 +55,12 @@ export const MENU_ITEMS = [
     icon: "ri:plane-line",
     label: "Airport",
     url: "/airport",
+  },
+  {
+    key: "Traveler",
+    icon: "ri:suitcase-line",
+    label: "Traveler",
+    url: "/traveler",
   },
   {
     key: "Survey",

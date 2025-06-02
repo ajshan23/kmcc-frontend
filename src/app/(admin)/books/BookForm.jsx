@@ -30,6 +30,10 @@ const BookForm = () => {
   const [pdfFile, setPdfFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // File size limits
+  const MAX_PDF_SIZE = 10 * 1024 * 1024; // 10MB
+  const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
+
   useEffect(() => {
     if (isEditMode) {
       const fetchBook = async () => {
@@ -59,6 +63,14 @@ const BookForm = () => {
     if (!file.type.match("image.*")) {
       setToastMessage("Please select an image file");
       setShowToast(true);
+      e.target.value = ""; // Clear the input
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      setToastMessage("Image file size must be less than 2MB");
+      setShowToast(true);
+      e.target.value = ""; // Clear the input
       return;
     }
 
@@ -77,6 +89,14 @@ const BookForm = () => {
     if (file.type !== "application/pdf") {
       setToastMessage("Please select a PDF file");
       setShowToast(true);
+      e.target.value = ""; // Clear the input
+      return;
+    }
+
+    if (file.size > MAX_PDF_SIZE) {
+      setToastMessage("PDF file size must be less than 10MB");
+      setShowToast(true);
+      e.target.value = ""; // Clear the input
       return;
     }
 
@@ -96,6 +116,21 @@ const BookForm = () => {
 
     if (!isEditMode && (!coverImage || !pdfFile)) {
       setToastMessage("Both cover image and PDF file are required");
+      setShowToast(true);
+      setIsLoading(false);
+      return;
+    }
+
+    // Additional size validation in case the user bypasses the file input
+    if (coverImage && coverImage.size > MAX_IMAGE_SIZE) {
+      setToastMessage("Image file size must be less than 2MB");
+      setShowToast(true);
+      setIsLoading(false);
+      return;
+    }
+
+    if (pdfFile && pdfFile.size > MAX_PDF_SIZE) {
+      setToastMessage("PDF file size must be less than 10MB");
       setShowToast(true);
       setIsLoading(false);
       return;
@@ -215,6 +250,9 @@ const BookForm = () => {
                         onChange={handleCoverChange}
                         required={!isEditMode}
                       />
+                      <Form.Text className="text-muted">
+                        Max size: 2MB (JPEG, PNG, etc.)
+                      </Form.Text>
                       {coverPreview && (
                         <div className="mt-3">
                           <p>Preview:</p>
@@ -235,6 +273,9 @@ const BookForm = () => {
                         onChange={handlePdfChange}
                         required={!isEditMode}
                       />
+                      <Form.Text className="text-muted">
+                        Max size: 10MB
+                      </Form.Text>
                       {pdfFile && (
                         <div className="mt-2">
                           <p>Selected file: {pdfFile.name}</p>

@@ -253,10 +253,8 @@ const SubWingDetails = () => {
                                 </td>
                               </tr>
                               <tr>
-                                <th>Created At</th>
-                                <td>
-                                  {new Date(subWing.createdAt).toLocaleString()}
-                                </td>
+                                <th>Description</th>
+                                <td>{subWing.description}</td>
                               </tr>
                             </tbody>
                           </Table>

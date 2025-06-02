@@ -24,6 +24,7 @@ const SubWingForm = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [name, setName] = useState("");
+  const [description, setDescription] = useState(""); // New state for description
   const [backgroundColor, setBackgroundColor] = useState("#FFFFFF");
   const [mainColor, setMainColor] = useState("#000000");
   const [icon, setIcon] = useState(null);
@@ -38,6 +39,7 @@ const SubWingForm = () => {
           if (response.status === 200) {
             const subWing = response.data.data;
             setName(subWing.name);
+            setDescription(subWing.description || ""); // Set description
             setBackgroundColor(subWing.backgroundColor);
             setMainColor(subWing.mainColor);
             setIconPreview(subWing.icon);
@@ -84,6 +86,7 @@ const SubWingForm = () => {
 
     const formData = new FormData();
     formData.append("name", name);
+    formData.append("description", description); // Add description to form data
     formData.append("backgroundColor", backgroundColor);
     formData.append("mainColor", mainColor);
     if (icon) {
@@ -157,7 +160,7 @@ const SubWingForm = () => {
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Sub-Wing Name</Form.Label>
+                      <Form.Label>Sub-Wing Name *</Form.Label>
                       <Form.Control
                         type="text"
                         value={name}
@@ -168,7 +171,18 @@ const SubWingForm = () => {
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                      <Form.Label>Background Color</Form.Label>
+                      <Form.Label>Description</Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={3}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Enter sub-wing description (optional)"
+                      />
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                      <Form.Label>Background Color *</Form.Label>
                       <div className="d-flex align-items-center">
                         <Form.Control
                           type="color"
@@ -182,12 +196,13 @@ const SubWingForm = () => {
                           onChange={(e) => setBackgroundColor(e.target.value)}
                           className="ms-2"
                           placeholder="#FFFFFF"
+                          required
                         />
                       </div>
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                      <Form.Label>Main Color</Form.Label>
+                      <Form.Label>Main Color *</Form.Label>
                       <div className="d-flex align-items-center">
                         <Form.Control
                           type="color"
@@ -201,6 +216,7 @@ const SubWingForm = () => {
                           onChange={(e) => setMainColor(e.target.value)}
                           className="ms-2"
                           placeholder="#000000"
+                          required
                         />
                       </div>
                     </Form.Group>
@@ -214,6 +230,9 @@ const SubWingForm = () => {
                         accept="image/svg+xml"
                         onChange={handleIconChange}
                       />
+                      <Form.Text className="text-muted">
+                        Optional SVG icon for the sub-wing
+                      </Form.Text>
                       {iconPreview && (
                         <div className="mt-3">
                           <p>Preview:</p>

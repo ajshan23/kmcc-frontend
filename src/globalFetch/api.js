@@ -1,7 +1,7 @@
 import axios from "axios";
 //https://kmcc.gosneakers.in/api
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:3000/api", // Your backend base URL
+  baseURL: "https://kmcc.gosneakers.in/api", // Your backend base URL
   headers: {
     "Content-Type": "application/json", // Default header
   },

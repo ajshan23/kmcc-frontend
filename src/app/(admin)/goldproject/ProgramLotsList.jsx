@@ -9,6 +9,7 @@ import {
   Card,
   Spinner,
   Alert,
+  Modal,
 } from "react-bootstrap";
 import axiosInstance from "../../../globalFetch/api";
 import PageTitle from "../../../components/PageTitle";
@@ -20,6 +21,10 @@ const ProgramLotsList = () => {
   const [program, setProgram] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [lotToDelete, setLotToDelete] = useState(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,6 +55,22 @@ const ProgramLotsList = () => {
     };
     fetchData();
   }, [programId]);
+
+  const handleDeleteLot = async () => {
+    setLoading(true);
+    try {
+      await axiosInstance.delete(`/gold/lots/${lotToDelete.id}`);
+      setLots(lots.filter((lot) => lot.id !== lotToDelete.id));
+      setToastMessage("Lot removed successfully");
+      setShowToast(true);
+      setShowDeleteModal(false);
+    } catch (error) {
+      setToastMessage(error.response?.data?.message || "Failed to remove lot");
+      setShowToast(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -86,6 +107,16 @@ const ProgramLotsList = () => {
           { label: "Lots", active: true },
         ]}
       />
+
+      <Toast
+        onClose={() => setShowToast(false)}
+        show={showToast}
+        delay={3000}
+        autohide
+        style={{ position: "fixed", top: 20, right: 20, zIndex: 9999 }}
+      >
+        <Toast.Body>{toastMessage}</Toast.Body>
+      </Toast>
 
       <Row className="mb-3">
         <Col>
@@ -132,17 +163,32 @@ const ProgramLotsList = () => {
                           </Badge>
                         </td>
                         <td>
-                          <Button
-                            size="sm"
-                            variant="info"
-                            onClick={() =>
-                              navigate(
-                                `/gold-programs/${programId}/lots/${lot.id}`
-                              )
-                            }
-                          >
-                            View
-                          </Button>
+                          <div className="d-flex gap-2">
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() =>
+                                navigate(
+                                  `/gold-programs/${programId}/lots/${lot.id}/payments`
+                                )
+                              }
+                            >
+                              Payments
+                            </Button>
+                            {!lot.winners?.length && (
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => {
+                                  setLotToDelete(lot);
+                                  setShowDeleteModal(true);
+                                }}
+                                disabled={loading}
+                              >
+                                Remove
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -153,6 +199,35 @@ const ProgramLotsList = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Lot Removal</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to remove this lot? This action cannot be
+          undone.
+          {lotToDelete?.payments?.length > 0 && (
+            <Alert variant="warning" className="mt-3">
+              <strong>Warning:</strong> This lot has payment records. Removing
+              it will also delete all associated payment records.
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDeleteLot}>
+            {loading ? <Spinner size="sm" animation="border" /> : "Remove Lot"}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };

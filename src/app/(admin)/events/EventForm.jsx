@@ -40,6 +40,32 @@ const EventForm = () => {
 
   const bannerAspectRatio = 362 / 472;
 
+  const convertTimeTo24Hour = (timeStr) => {
+    if (!timeStr) return "";
+
+    try {
+      // Handle both "HH:MM AM/PM" and "HH:MM" formats
+      if (timeStr.includes("AM") || timeStr.includes("PM")) {
+        const [time, modifier] = timeStr.split(" ");
+        let [hours, minutes] = time.split(":");
+
+        if (modifier === "PM" && hours !== "12") {
+          hours = parseInt(hours, 10) + 12;
+        } else if (modifier === "AM" && hours === "12") {
+          hours = "00";
+        }
+
+        return `${hours.padStart(2, "0")}:${minutes}`;
+      }
+
+      // If already in 24-hour format
+      return timeStr;
+    } catch (e) {
+      console.error("Error converting time:", e);
+      return "";
+    }
+  };
+
   useEffect(() => {
     if (!id) return;
 
@@ -47,20 +73,37 @@ const EventForm = () => {
       try {
         const response = await axiosInstance.get(`/admin/events/${id}`);
         if (response.status === 200) {
-          const event = response.data.data;
+          const event = response.data.data.event; // Access nested event object
 
-          const [startTimeStr, endTimeStr] = event.timing.split(" - ");
+          // Fix date handling
+          let eventDate;
+          try {
+            eventDate = new Date(event.eventDate);
+            if (isNaN(eventDate.getTime())) {
+              // Handle invalid date
+              eventDate = new Date(); // fallback to current date
+            }
+          } catch (e) {
+            eventDate = new Date(); // fallback to current date
+          }
+
+          const [startTimeStr, endTimeStr] = event.timing?.split(" - ") || [
+            "",
+            "",
+          ];
           const startTime = convertTimeTo24Hour(startTimeStr);
           const endTime = convertTimeTo24Hour(endTimeStr);
 
           setFormData({
-            title: event.title,
-            place: event.place,
+            title: event.title || "",
+            place: event.place || "",
             eventType: event.eventType || "",
-            eventDate: new Date(event.eventDate).toISOString().split("T")[0],
-            startTime,
-            endTime,
-            highlights: event.highlights || [""],
+            eventDate: eventDate.toISOString().split("T")[0],
+            startTime: startTime || "",
+            endTime: endTime || "",
+            highlights: Array.isArray(event.highlights)
+              ? event.highlights.filter((h) => h)
+              : [""],
           });
 
           if (event.image) {
@@ -78,23 +121,6 @@ const EventForm = () => {
 
     fetchEvent();
   }, [id]);
-
-  const convertTimeTo24Hour = (timeStr) => {
-    if (!timeStr) return "";
-
-    const [time, modifier] = timeStr.split(" ");
-    let [hours, minutes] = time.split(":");
-
-    if (modifier === "PM" && hours !== "12") {
-      hours = parseInt(hours, 10) + 12;
-    }
-
-    if (modifier === "AM" && hours === "12") {
-      hours = "00";
-    }
-
-    return `${hours}:${minutes}`;
-  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];

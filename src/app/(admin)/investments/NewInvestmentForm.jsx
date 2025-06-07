@@ -29,6 +29,7 @@ const NewInvestmentForm = () => {
   const [formData, setFormData] = useState({
     userId: "",
     initialDeposit: "",
+    notes: "", // Added notes field
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState([]);
@@ -82,7 +83,6 @@ const NewInvestmentForm = () => {
   };
 
   const handleInputBlur = () => {
-    // Small delay to allow click on suggestions before hiding
     setTimeout(() => {
       setShowSuggestions(false);
     }, 200);
@@ -142,6 +142,7 @@ const NewInvestmentForm = () => {
         initialDeposit: formData.initialDeposit
           ? parseFloat(formData.initialDeposit)
           : undefined,
+        notes: formData.notes || undefined, // Include notes in the request
       });
 
       setToastMessage("Investment created successfully!");
@@ -281,7 +282,7 @@ const NewInvestmentForm = () => {
                           <ListGroup.Item
                             key={user.id}
                             action
-                            onMouseDown={(e) => e.preventDefault()} // Prevent blur
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => handleUserSelect(user)}
                             style={{ cursor: "pointer" }}
                           >
@@ -349,6 +350,24 @@ const NewInvestmentForm = () => {
                       setFormData({
                         ...formData,
                         initialDeposit: e.target.value,
+                      })
+                    }
+                    disabled={loading.submit || loading.checking}
+                  />
+                </Form.Group>
+
+                {/* Add Notes Field */}
+                <Form.Group className="mb-3">
+                  <Form.Label>Notes (Optional)</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    placeholder="Enter any notes about this initial deposit"
+                    value={formData.notes}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        notes: e.target.value,
                       })
                     }
                     disabled={loading.submit || loading.checking}

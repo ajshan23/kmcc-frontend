@@ -24,10 +24,9 @@ const EventForm = () => {
   const [toastMessage, setToastMessage] = useState("");
   const [imageSrc, setImageSrc] = useState(null);
   const [croppedImage, setCroppedImage] = useState(null);
-  const [isLoading, setIsLoading] = useState(!!id); // Only loading for edit mode
+  const [isLoading, setIsLoading] = useState(!!id);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form state
   const [formData, setFormData] = useState({
     title: "",
     place: "",
@@ -38,31 +37,40 @@ const EventForm = () => {
     highlights: [""],
   });
 
-  // Fixed aspect ratio for event (362x472)
   const bannerAspectRatio = 362 / 472;
-
   useEffect(() => {
     if (!id) return;
 
     const fetchEvent = async () => {
       try {
         const response = await axiosInstance.get(`/admin/events/${id}`);
-        if (response.status === 200) {
-          const event = response.data.data;
+        console.log("API Response:", response.data); // Debug log
 
-          // Parse timing (assuming format "9:00 AM - 5:00 PM")
-          const [startTimeStr, endTimeStr] = event.timing.split(" - ");
-          const startTime = convertTimeTo24Hour(startTimeStr);
-          const endTime = convertTimeTo24Hour(endTimeStr);
+        if (response.status === 200) {
+          const event = response.data.data.event;
+
+          // Parse the timing string
+          let startTime = "";
+          let endTime = "";
+
+          if (event.timing) {
+            const [startTimeStr, endTimeStr] = event.timing.split(" - ");
+            startTime = convertTimeTo24Hour(startTimeStr.trim());
+            endTime = convertTimeTo24Hour(endTimeStr.trim());
+          }
 
           setFormData({
-            title: event.title,
-            place: event.place,
+            title: event.title || "",
+            place: event.place || "",
             eventType: event.eventType || "",
-            eventDate: new Date(event.eventDate).toISOString().split("T")[0],
+            eventDate: event.eventDate
+              ? new Date(event.eventDate).toISOString().split("T")[0]
+              : "",
             startTime,
             endTime,
-            highlights: event.highlights || [""],
+            highlights: Array.isArray(event.highlights)
+              ? event.highlights
+              : [""],
           });
 
           if (event.image) {
@@ -71,7 +79,7 @@ const EventForm = () => {
         }
       } catch (error) {
         console.error("Error fetching event:", error);
-        setToastMessage("Failed to load event data");
+        setToastMessage("Failed to load event data. Please try again.");
         setShowToast(true);
       } finally {
         setIsLoading(false);
@@ -81,24 +89,34 @@ const EventForm = () => {
     fetchEvent();
   }, [id]);
 
-  // Helper function to convert time format
   const convertTimeTo24Hour = (timeStr) => {
     if (!timeStr) return "";
 
-    const [time, modifier] = timeStr.split(" ");
-    let [hours, minutes] = time.split(":");
-
-    if (modifier === "PM" && hours !== "12") {
-      hours = parseInt(hours, 10) + 12;
+    // If already in 24-hour format (HH:MM)
+    if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(timeStr)) {
+      return timeStr;
     }
 
-    if (modifier === "AM" && hours === "12") {
-      hours = "00";
-    }
+    // Handle 12-hour format (e.g., "10:00 AM")
+    const time = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+    if (!time) return "";
 
-    return `${hours}:${minutes}`;
+    let hours = parseInt(time[1], 10);
+    const minutes = time[2];
+    const period = time[3] ? time[3].toUpperCase() : "";
+
+    // Handle PM times (except 12 PM)
+    if (period === "PM" && hours !== 12) {
+      hours += 12;
+    }
+    // Handle 12 AM (midnight)
+    else if (period === "AM" && hours === 12) {
+      hours = 0;
+    }
+    // 12 PM remains 12
+
+    return `${hours.toString().padStart(2, "0")}:${minutes}`;
   };
-
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -135,7 +153,7 @@ const EventForm = () => {
     const updatedHighlights = formData.highlights.filter((_, i) => i !== index);
     setFormData((prev) => ({
       ...prev,
-      highlights: updatedHighlights,
+      highlights: updatedHighlights.length > 0 ? updatedHighlights : [""],
     }));
   };
 
@@ -155,58 +173,65 @@ const EventForm = () => {
     try {
       const formDataToSend = new FormData();
 
-      // Append cropped image if it exists
       if (croppedImage) {
         formDataToSend.append("image", croppedImage);
       }
 
-      // Format timing
       const formatTime = (time) => {
-        const [hours, minutes] = time.split(":");
-        const parsedHours = parseInt(hours, 10);
-        const ampm = parsedHours >= 12 ? "PM" : "AM";
-        const formattedHours = parsedHours % 12 || 12;
-        return `${formattedHours}:${minutes} ${ampm}`;
+        if (!time) return "";
+
+        try {
+          const [hours, minutes] = time.split(":");
+          const parsedHours = parseInt(hours, 10);
+          const ampm = parsedHours >= 12 ? "PM" : "AM";
+          const formattedHours = parsedHours % 12 || 12;
+          return `${formattedHours}:${minutes} ${ampm}`;
+        } catch (error) {
+          console.warn("Error formatting time:", error);
+          return "";
+        }
       };
 
       const timing = `${formatTime(formData.startTime)} - ${formatTime(
         formData.endTime
       )}`;
 
-      // Append other form data
       if (id) formDataToSend.append("id", id);
       formDataToSend.append("title", formData.title);
       formDataToSend.append("place", formData.place);
       formDataToSend.append("eventType", formData.eventType);
       formDataToSend.append("eventDate", formData.eventDate);
       formDataToSend.append("timing", timing);
+
+      // Filter out empty highlights
+      const validHighlights = formData.highlights.filter(
+        (h) => h.trim() !== ""
+      );
       formDataToSend.append(
         "highlights",
-        JSON.stringify(formData.highlights.filter((h) => h.trim() !== ""))
+        JSON.stringify(validHighlights.length > 0 ? validHighlights : [""])
       );
 
-      const response = await axiosInstance.post(
-        id ? `/admin/events/${id}` : "/admin/create-event",
-        formDataToSend,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const endpoint = id ? `/admin/events/${id}` : "/admin/create-event";
+      const response = await axiosInstance.post(endpoint, formDataToSend, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-      if (response.status === 200 || response.status === 201) {
+      if ([200, 201].includes(response.status)) {
         setToastMessage(
           id ? "Event updated successfully!" : "Event created successfully!"
         );
         setShowToast(true);
-        setTimeout(() => {
-          navigate("/event");
-        }, 2000);
+        setTimeout(() => navigate("/event"), 2000);
       }
     } catch (error) {
       console.error("Error saving event:", error);
-      setToastMessage(`Failed to ${id ? "update" : "create"} event`);
+      setToastMessage(
+        error.response?.data?.message ||
+          `Failed to ${id ? "update" : "create"} event`
+      );
       setShowToast(true);
     } finally {
       setIsSubmitting(false);
@@ -249,7 +274,6 @@ const EventForm = () => {
               <Form onSubmit={handleSubmit}>
                 <Row>
                   <Col lg={9}>
-                    {/* Image Upload */}
                     <Form.Group className="mb-3">
                       <Form.Label>Event Image (362x472)</Form.Label>
                       <Form.Control
@@ -264,7 +288,6 @@ const EventForm = () => {
                       </Form.Text>
                     </Form.Group>
 
-                    {/* Cropper */}
                     {imageSrc && (
                       <>
                         <div className="img-container">
@@ -341,7 +364,6 @@ const EventForm = () => {
                   </Col>
 
                   <Col lg={3}>
-                    {/* Title Field */}
                     <Form.Group className="mb-3">
                       <Form.Label>Event Title</Form.Label>
                       <Form.Control
@@ -354,7 +376,6 @@ const EventForm = () => {
                       />
                     </Form.Group>
 
-                    {/* Place Field */}
                     <Form.Group className="mb-3">
                       <Form.Label>Place</Form.Label>
                       <Form.Control
@@ -367,7 +388,6 @@ const EventForm = () => {
                       />
                     </Form.Group>
 
-                    {/* Event Type Field */}
                     <Form.Group className="mb-3">
                       <Form.Label>Event Type</Form.Label>
                       <Form.Control
@@ -384,7 +404,6 @@ const EventForm = () => {
                       </Form.Control>
                     </Form.Group>
 
-                    {/* Date Input */}
                     <Form.Group className="mb-3">
                       <Form.Label>Date</Form.Label>
                       <Form.Control
@@ -396,7 +415,6 @@ const EventForm = () => {
                       />
                     </Form.Group>
 
-                    {/* Start Time Input */}
                     <Form.Group className="mb-3">
                       <Form.Label>Start Time</Form.Label>
                       <Form.Control
@@ -408,7 +426,6 @@ const EventForm = () => {
                       />
                     </Form.Group>
 
-                    {/* End Time Input */}
                     <Form.Group className="mb-3">
                       <Form.Label>End Time</Form.Label>
                       <Form.Control
@@ -420,7 +437,6 @@ const EventForm = () => {
                       />
                     </Form.Group>
 
-                    {/* Highlights Field */}
                     <Form.Group className="mb-3">
                       <Form.Label>Highlights</Form.Label>
                       {formData.highlights.map((highlight, index) => (
@@ -455,7 +471,6 @@ const EventForm = () => {
                       </Button>
                     </Form.Group>
 
-                    {/* Submit Button */}
                     <div className="d-grid gap-2">
                       <Button
                         variant="primary"

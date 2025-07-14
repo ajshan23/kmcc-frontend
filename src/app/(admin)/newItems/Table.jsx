@@ -8,6 +8,8 @@ import {
   Row,
   Toast,
   Spinner,
+  InputGroup,
+  FormControl,
 } from "react-bootstrap";
 import PageTitle from "../../../components/PageTitle";
 import axiosInstance from "../../../globalFetch/api";
@@ -17,7 +19,8 @@ import IconifyIcon from "@/components/wrappers/IconifyIcon";
 
 const Table = () => {
   const [users, setUsers] = useState([]);
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -34,7 +37,7 @@ const Table = () => {
         params: {
           page,
           limit: 10,
-          search,
+          search: searchTerm,
         },
       });
 
@@ -52,7 +55,18 @@ const Table = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [page, search]);
+  }, [page, searchTerm]);
+
+  const handleSearchClick = () => {
+    setSearchTerm(searchInput);
+    setPage(1); // Reset to first page when searching
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setSearchTerm("");
+    setPage(1);
+  };
 
   const handleDeleteClick = (userId) => {
     setSelectedUserId(userId);
@@ -116,13 +130,32 @@ const Table = () => {
           <Card>
             <CardBody>
               <div className="d-flex justify-content-between mb-3">
-                <input
-                  type="text"
-                  placeholder="Search users..."
-                  className="form-control w-25"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
+                <InputGroup style={{ width: "400px" }}>
+                  <FormControl
+                    placeholder="Search users..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") {
+                        handleSearchClick();
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="outline-secondary"
+                    onClick={handleSearchClick}
+                  >
+                    Search
+                  </Button>
+                  {searchTerm && (
+                    <Button
+                      variant="outline-danger"
+                      onClick={handleClearSearch}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </InputGroup>
               </div>
 
               <div className="table-responsive">
@@ -132,6 +165,7 @@ const Table = () => {
                       <th>Name</th>
                       <th>Iqama Number</th>
                       <th>Member ID</th>
+                      <th>Area name</th>
                       <th>Phone</th>
                       <th>Profile</th>
                       <th>Actions</th>
@@ -148,6 +182,7 @@ const Table = () => {
                           <td>{user.name}</td>
                           <td>{user.iqamaNumber}</td>
                           <td>{user.memberId}</td>
+                          <td>{user.areaName}</td>
                           <td>{user.phoneNumber}</td>
                           <td>
                             {user.profileImage ? (

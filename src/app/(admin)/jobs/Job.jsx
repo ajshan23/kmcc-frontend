@@ -180,7 +180,7 @@ const Job = () => {
                         >
                           <IconifyIcon icon="mdi:pencil" color="white" />
                         </Button>
-                        <Button
+                        {/* <Button
                           type="button"
                           variant="danger"
                           onClick={() => handleDeleteClick(job)}
@@ -189,7 +189,7 @@ const Job = () => {
                             icon="ri:delete-bin-4-fill"
                             color="white"
                           />
-                        </Button>
+                        </Button> */}
                       </td>
                     </tr>
                   ))}

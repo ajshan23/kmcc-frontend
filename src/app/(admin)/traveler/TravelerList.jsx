@@ -181,6 +181,8 @@ const TravelList = () => {
                   <tr>
                     <th>#</th>
                     <th>Traveler</th>
+                    <th>Phone</th>
+                    <th>Area name</th>
                     <th>From</th>
                     <th>To</th>
                     <th>Date</th>
@@ -194,6 +196,8 @@ const TravelList = () => {
                     <tr key={travel.id}>
                       <td>{index + 1}</td>
                       <td>{travel.user?.name || "N/A"}</td>
+                      <td>{travel.user?.phoneNumber || "N/A"}</td>
+                      <td>{travel.user?.areaName || "N/A"}</td>
                       <td>{travel.fromAirport?.name || "N/A"}</td>
                       <td>{travel.toAirport?.name || "N/A"}</td>
                       <td>{moment(travel.travelDate).format("YYYY-MM-DD")}</td>

@@ -25,6 +25,7 @@ const Table = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const navigate = useNavigate();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -41,7 +42,6 @@ const Table = () => {
         },
       });
 
-      // Access the nested data property
       setUsers(response.data.data.users);
       setTotalPages(response.data.data.pagination.totalPages);
     } catch (error) {
@@ -56,6 +56,39 @@ const Table = () => {
   useEffect(() => {
     fetchUsers();
   }, [page, searchTerm]);
+
+  const handleExportAllUsers = async () => {
+    try {
+      setExportLoading(true);
+      const response = await axiosInstance.get("/user/export", {
+        responseType: 'blob', // Important for file downloads
+      });
+
+      // Create a download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Set filename with current date
+      const date = new Date().toISOString().split('T')[0];
+      link.setAttribute('download', `kmcc_users_export_${date}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      setToastMessage("All users data exported successfully!");
+      setShowToast(true);
+    } catch (error) {
+      console.error("Error exporting users:", error);
+      setToastMessage(error.response?.data?.message || "Failed to export users data");
+      setShowToast(true);
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   const handleSearchClick = () => {
     setSearchTerm(searchInput);
@@ -156,6 +189,32 @@ const Table = () => {
                     </Button>
                   )}
                 </InputGroup>
+
+                {/* Export Button */}
+                <Button
+                  variant="success"
+                  onClick={handleExportAllUsers}
+                  disabled={exportLoading}
+                >
+                  {exportLoading ? (
+                    <>
+                      <Spinner
+                        as="span"
+                        animation="border"
+                        size="sm"
+                        role="status"
+                        aria-hidden="true"
+                        className="me-2"
+                      />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <IconifyIcon icon="mdi:file-excel" className="me-2" />
+                      Export to Excel
+                    </>
+                  )}
+                </Button>
               </div>
 
               <div className="table-responsive">
@@ -178,6 +237,7 @@ const Table = () => {
                           key={user.id}
                           className="align-middle"
                           onClick={() => navigate(`/users/${user.id}`)}
+                          style={{ cursor: "pointer" }}
                         >
                           <td>{user.name}</td>
                           <td>{user.iqamaNumber}</td>
@@ -225,7 +285,7 @@ const Table = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="6" className="text-center">
+                        <td colSpan="7" className="text-center">
                           No users found
                         </td>
                       </tr>

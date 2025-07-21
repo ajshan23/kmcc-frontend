@@ -51,7 +51,6 @@ const WinnersManagement = () => {
     "December",
   ];
 
-  // Get year range based on program dates
   const getYearRange = () => {
     if (!program) return [];
 
@@ -67,7 +66,6 @@ const WinnersManagement = () => {
     return years;
   };
 
-  // Get unique winner years for filtering
   const winnerYears = [...new Set(winners.map((w) => w.year))].sort(
     (a, b) => b - a
   );
@@ -95,7 +93,6 @@ const WinnersManagement = () => {
           lotsRes.data.data.filter((lot) => !alreadyWinningLotIds.has(lot.id))
         );
 
-        // Set selected year to current year if no winners exist yet
         if (!programRes.data.data.winners?.length) {
           setSelectedYear(new Date().getFullYear());
         }
@@ -114,18 +111,6 @@ const WinnersManagement = () => {
     e.preventDefault();
     if (!newWinner.month || !newWinner.lotId || !newWinner.year) {
       setToastMessage("Month, year and lot selection are required");
-      setShowToast(true);
-      return;
-    }
-
-    const existingWinner = winners.find(
-      (w) =>
-        w.month === parseInt(newWinner.month) &&
-        w.year === parseInt(newWinner.year)
-    );
-
-    if (existingWinner) {
-      setToastMessage(`This month/year combination already has a winner`);
       setShowToast(true);
       return;
     }
@@ -212,6 +197,19 @@ const WinnersManagement = () => {
     try {
       await axiosInstance.delete(`/gold/winners/${winnerToDelete.id}`);
       setWinners(winners.filter((w) => w.id !== winnerToDelete.id));
+      
+      // Add the lot back to available lots if it's not already a winner in another month
+      const isLotStillWinner = winners.some(
+        w => w.lotId === winnerToDelete.lotId && w.id !== winnerToDelete.id
+      );
+      
+      if (!isLotStillWinner) {
+        const lotToAddBack = winners.find(w => w.id === winnerToDelete.id)?.lot;
+        if (lotToAddBack) {
+          setAvailableLots(prev => [...prev, lotToAddBack]);
+        }
+      }
+      
       setToastMessage("Winner deleted successfully");
       setShowDeleteModal(false);
     } catch (error) {
@@ -312,6 +310,18 @@ const WinnersManagement = () => {
                   </Form.Select>
                 </Form.Group>
 
+                <Form.Group className="mb-3">
+                  <Form.Label>Prize Amount (Optional)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    placeholder="Enter prize amount"
+                    value={newWinner.prizeAmount}
+                    onChange={(e) =>
+                      setNewWinner({ ...newWinner, prizeAmount: e.target.value })
+                    }
+                  />
+                </Form.Group>
+
                 <Button type="submit" variant="primary" disabled={loading}>
                   {loading ? (
                     <Spinner size="sm" animation="border" />
@@ -346,44 +356,59 @@ const WinnersManagement = () => {
                 <thead>
                   <tr>
                     <th>Month</th>
-                    <th>Winner</th>
+                    <th>Winner(s)</th>
                     <th>Member ID</th>
+                    <th>Prize Amount</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {winners
-                    .filter((w) => w.year === selectedYear)
-                    .sort((a, b) => a.month - b.month)
-                    .map((winner) => (
-                      <tr key={winner.id}>
-                        <td>
-                          <Badge bg="info">{months[winner.month - 1]}</Badge>
-                        </td>
-                        <td>{winner.lot?.user?.name || "N/A"}</td>
-                        <td>{winner.lot?.user?.memberId || "N/A"}</td>
-                        <td>
-                          <div className="d-flex gap-2">
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={() => handleEditWinner(winner)}
-                              disabled={loading}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDeleteClick(winner)}
-                              disabled={loading}
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                  {months.map((month, index) => {
+                    const monthWinners = winners
+                      .filter((w) => w.year === selectedYear && w.month === index + 1)
+                      .sort((a, b) => a.lot?.user?.name?.localeCompare(b.lot?.user?.name));
+
+                    if (monthWinners.length === 0) return null;
+
+                    return (
+                      <React.Fragment key={index}>
+                        {monthWinners.map((winner, winnerIndex) => (
+                          <tr key={`${index}-${winnerIndex}`}>
+                            {winnerIndex === 0 && (
+                              <td rowSpan={monthWinners.length}>
+                                <Badge bg="info">
+                                  {month} <Badge bg="light" text="dark">{monthWinners.length}</Badge>
+                                </Badge>
+                              </td>
+                            )}
+                            <td>{winner.lot?.user?.name || "N/A"}</td>
+                            <td>{winner.lot?.user?.memberId || "N/A"}</td>
+                            <td>{winner.prizeAmount ? `$${winner.prizeAmount}` : "N/A"}</td>
+                            <td>
+                              <div className="d-flex gap-2">
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => handleEditWinner(winner)}
+                                  disabled={loading}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() => handleDeleteClick(winner)}
+                                  disabled={loading}
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </Table>
 
@@ -464,6 +489,20 @@ const WinnersManagement = () => {
                       </option>
                     ))}
                 </Form.Select>
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Prize Amount</Form.Label>
+                <Form.Control
+                  type="number"
+                  value={editingWinner.prizeAmount || ""}
+                  onChange={(e) =>
+                    setEditingWinner({
+                      ...editingWinner,
+                      prizeAmount: e.target.value,
+                    })
+                  }
+                  placeholder="Enter prize amount"
+                />
               </Form.Group>
             </Form>
           )}

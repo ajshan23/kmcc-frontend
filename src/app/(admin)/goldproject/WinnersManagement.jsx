@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
   Card,
@@ -98,7 +98,7 @@ const WinnersManagement = () => {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        setToastMessage("Failed to load program data");
+        setToastMessage("Failed to load program datass");
         setShowToast(true);
       } finally {
         setLoading(false);

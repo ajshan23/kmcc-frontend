@@ -1,5 +1,4 @@
 import PageTitle from "../../../components/PageTitle";
-import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axiosInstance from "../../../globalFetch/api";
 import {
@@ -14,6 +13,7 @@ import {
   Card,
   Table,
   Form,
+  Pagination,
 } from "react-bootstrap";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
 import smLogo from "@/assets/images/logo-sm.png";
@@ -36,17 +36,23 @@ const TravelList = () => {
     status: "",
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         const [travelsRes, airportsRes] = await Promise.all([
-          axiosInstance.get("/travel"),
+          axiosInstance.get(`/travel?page=${currentPage}&limit=${itemsPerPage}`),
           axiosInstance.get("/airport"),
         ]);
 
         if (travelsRes.status === 200) {
-          setTravels(travelsRes.data.data);
+          setTravels(travelsRes.data.data.travels || travelsRes.data.data);
+          setTotalItems(travelsRes.data.data.pagination?.total || travelsRes.data.data.length);
         }
         if (airportsRes.status === 200) {
           setAirports(airportsRes.data.data);
@@ -60,7 +66,7 @@ const TravelList = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [currentPage, itemsPerPage]);
 
   const handleDeleteClick = (travel) => {
     setSelectedTravel(travel);
@@ -74,6 +80,8 @@ const TravelList = () => {
       setTravels((prev) => prev.filter((t) => t.id !== selectedTravel.id));
       setToastMessage("Travel deleted successfully!");
       setShowToast(true);
+      // Update total items count after deletion
+      setTotalItems(prev => prev - 1);
     } catch (error) {
       console.error("Error deleting travel:", error);
       setToastMessage("Failed to delete Travel");
@@ -133,6 +141,30 @@ const TravelList = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await axiosInstance.get("/travel/export", {
+        responseType: "blob", // Important for file downloads
+      });
+
+      // Create a download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "travel_records.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setToastMessage("Export started successfully!");
+      setShowToast(true);
+    } catch (error) {
+      console.error("Error exporting travels:", error);
+      setToastMessage("Failed to export travels");
+      setShowToast(true);
+    }
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case "AVAILABLE":
@@ -145,6 +177,23 @@ const TravelList = () => {
         return <Badge bg="secondary">Unknown</Badge>;
     }
   };
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  // Generate pagination items
+  let paginationItems = [];
+  for (let number = 1; number <= totalPages; number++) {
+    paginationItems.push(
+      <Pagination.Item
+        key={number}
+        active={number === currentPage}
+        onClick={() => setCurrentPage(number)}
+      >
+        {number}
+      </Pagination.Item>
+    );
+  }
 
   if (loading) {
     return <div className="d-flex justify-content-center p-5">Loading...</div>;
@@ -174,6 +223,10 @@ const TravelList = () => {
             <Card.Body>
               <div className="d-flex justify-content-between align-items-center mb-4">
                 <h4>Travels</h4>
+                <Button variant="success" onClick={handleExport}>
+                  <IconifyIcon icon="mdi:file-excel" className="me-2" />
+                  Export to Excel
+                </Button>
               </div>
 
               <Table striped bordered hover responsive>
@@ -194,7 +247,7 @@ const TravelList = () => {
                 <tbody>
                   {travels.map((travel, index) => (
                     <tr key={travel.id}>
-                      <td>{index + 1}</td>
+                      <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                       <td>{travel.user?.name || "N/A"}</td>
                       <td>{travel.user?.phoneNumber || "N/A"}</td>
                       <td>{travel.user?.areaName || "N/A"}</td>
@@ -224,6 +277,31 @@ const TravelList = () => {
                   ))}
                 </tbody>
               </Table>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="d-flex justify-content-center mt-4">
+                  <Pagination>
+                    <Pagination.First
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                    />
+                    <Pagination.Prev
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    />
+                    {paginationItems}
+                    <Pagination.Next
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    />
+                    <Pagination.Last
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                    />
+                  </Pagination>
+                </div>
+              )}
             </Card.Body>
           </Card>
         </Col>

@@ -10,6 +10,7 @@ import {
   Spinner,
   InputGroup,
   FormControl,
+  ButtonGroup,
 } from "react-bootstrap";
 import PageTitle from "../../../components/PageTitle";
 import axiosInstance from "../../../globalFetch/api";
@@ -134,6 +135,83 @@ const Table = () => {
   const handleEditClick = (userId, e) => {
     e.stopPropagation();
     navigate(`/users/${userId}/edit`);
+  };
+
+  const renderPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5; // Number of pages to show around current page
+    const ellipsis = <Button variant="outline-primary" disabled>...</Button>;
+
+    if (totalPages <= 7) {
+      // Show all pages if there are 7 or fewer
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(
+          <Button
+            key={i}
+            variant={i === page ? "primary" : "outline-primary"}
+            onClick={() => setPage(i)}
+          >
+            {i}
+          </Button>
+        );
+      }
+    } else {
+      // Always show first page
+      pageNumbers.push(
+        <Button
+          key={1}
+          variant={1 === page ? "primary" : "outline-primary"}
+          onClick={() => setPage(1)}
+        >
+          1
+        </Button>
+      );
+
+      if (page > 3) {
+        pageNumbers.push(ellipsis);
+      }
+
+      // Determine range of pages around current page
+      let startPage = Math.max(2, page - 1);
+      let endPage = Math.min(totalPages - 1, page + 1);
+
+      // Adjust if we're near the start or end
+      if (page <= 3) {
+        endPage = 4;
+      } else if (page >= totalPages - 2) {
+        startPage = totalPages - 3;
+      }
+
+      // Add the range pages
+      for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(
+          <Button
+            key={i}
+            variant={i === page ? "primary" : "outline-primary"}
+            onClick={() => setPage(i)}
+          >
+            {i}
+          </Button>
+        );
+      }
+
+      if (page < totalPages - 2) {
+        pageNumbers.push(ellipsis);
+      }
+
+      // Always show last page
+      pageNumbers.push(
+        <Button
+          key={totalPages}
+          variant={totalPages === page ? "primary" : "outline-primary"}
+          onClick={() => setPage(totalPages)}
+        >
+          {totalPages}
+        </Button>
+      );
+    }
+
+    return pageNumbers;
   };
 
   if (loading) {
@@ -294,7 +372,7 @@ const Table = () => {
                 </table>
               </div>
 
-              <div className="d-flex justify-content-between mt-3">
+              <div className="d-flex justify-content-between align-items-center mt-3">
                 <Button
                   variant="primary"
                   disabled={page <= 1}
@@ -302,9 +380,11 @@ const Table = () => {
                 >
                   Previous
                 </Button>
-                <span>
-                  Page {page} of {totalPages}
-                </span>
+                
+                <ButtonGroup className="mx-2">
+                  {renderPageNumbers()}
+                </ButtonGroup>
+                
                 <Button
                   variant="primary"
                   disabled={page >= totalPages}

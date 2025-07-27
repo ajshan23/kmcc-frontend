@@ -20,6 +20,7 @@ import {
   Tabs,
   Tab,
   Badge,
+  Pagination,
 } from "react-bootstrap";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
 import EventAttendance from "./EventAttendance";
@@ -35,13 +36,22 @@ const Event = () => {
   const [toastMessage, setToastMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("events");
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalEvents, setTotalEvents] = useState(0);
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await axiosInstance.get("/admin/get-events");
+        const response = await axiosInstance.get(
+          `/admin/get-events?page=${currentPage}&limit=${limit}`
+        );
         if (response.status === 200) {
           setEvents(response.data.data);
+          setTotalEvents(response.data.totalEvents);
+          setTotalPages(response.data.totalPages);
         }
       } catch (error) {
         console.error(error);
@@ -50,7 +60,7 @@ const Event = () => {
       }
     };
     fetchEvents();
-  }, []);
+  }, [currentPage, limit]);
 
   const handleUpdateClick = (event) => {
     setSelectedEvent(event);
@@ -108,6 +118,7 @@ const Event = () => {
         setEvents((prevEvents) =>
           prevEvents.filter((event) => event.id !== selectedEvent.id)
         );
+        setTotalEvents(prev => prev - 1);
         setToastMessage("Event deleted successfully!");
         setShowToast(true);
       }
@@ -123,6 +134,71 @@ const Event = () => {
   const filteredEvents = events.filter((event) =>
     event.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleLimitChange = (e) => {
+    setLimit(Number(e.target.value));
+    setCurrentPage(1); // Reset to first page when changing limit
+  };
+
+  // Pagination items
+  const renderPaginationItems = () => {
+    let items = [];
+    const maxVisiblePages = 5; // Number of visible page buttons
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // First page
+    if (startPage > 1) {
+      items.push(
+        <Pagination.Item key={1} active={1 === currentPage} onClick={() => handlePageChange(1)}>
+          1
+        </Pagination.Item>
+      );
+      if (startPage > 2) {
+        items.push(<Pagination.Ellipsis key="start-ellipsis" />);
+      }
+    }
+
+    // Middle pages
+    for (let number = startPage; number <= endPage; number++) {
+      items.push(
+        <Pagination.Item 
+          key={number} 
+          active={number === currentPage} 
+          onClick={() => handlePageChange(number)}
+        >
+          {number}
+        </Pagination.Item>
+      );
+    }
+
+    // Last page
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        items.push(<Pagination.Ellipsis key="end-ellipsis" />);
+      }
+      items.push(
+        <Pagination.Item 
+          key={totalPages} 
+          active={totalPages === currentPage} 
+          onClick={() => handlePageChange(totalPages)}
+        >
+          {totalPages}
+        </Pagination.Item>
+      );
+    }
+
+    return items;
+  };
 
   return (
     <div className="p-4">
@@ -224,15 +300,30 @@ const Event = () => {
                   </InputGroup>
                 </Col>
                 <Col md={6} className="text-md-end">
-                  <Button
-                    variant="primary"
-                    as={Link}
-                    to="/event/new"
-                    className="px-4"
-                  >
-                    <IconifyIcon icon="mdi:plus" className="me-2" />
-                    Create New Event
-                  </Button>
+                  <div className="d-flex justify-content-md-end align-items-center">
+                    <div className="me-3">
+                      <FormControl
+                        as="select"
+                        value={limit}
+                        onChange={handleLimitChange}
+                        style={{ width: '80px' }}
+                      >
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                      </FormControl>
+                    </div>
+                    <Button
+                      variant="primary"
+                      as={Link}
+                      to="/event/new"
+                      className="px-4"
+                    >
+                      <IconifyIcon icon="mdi:plus" className="me-2" />
+                      Create New Event
+                    </Button>
+                  </div>
                 </Col>
               </Row>
 
@@ -363,6 +454,36 @@ const Event = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="d-flex justify-content-between align-items-center mt-3">
+                  <div className="text-muted">
+                    Showing {(currentPage - 1) * limit + 1} to{" "}
+                    {Math.min(currentPage * limit, totalEvents)} of {totalEvents}{" "}
+                    events
+                  </div>
+                  <Pagination>
+                    <Pagination.First 
+                      onClick={() => handlePageChange(1)} 
+                      disabled={currentPage === 1} 
+                    />
+                    <Pagination.Prev 
+                      onClick={() => handlePageChange(currentPage - 1)} 
+                      disabled={currentPage === 1} 
+                    />
+                    {renderPaginationItems()}
+                    <Pagination.Next 
+                      onClick={() => handlePageChange(currentPage + 1)} 
+                      disabled={currentPage === totalPages} 
+                    />
+                    <Pagination.Last 
+                      onClick={() => handlePageChange(totalPages)} 
+                      disabled={currentPage === totalPages} 
+                    />
+                  </Pagination>
+                </div>
+              )}
             </CardBody>
           </Card>
         </Tab>
@@ -377,9 +498,6 @@ const Event = () => {
             </Card>
           )}
         </Tab>
-        {/* <Tab eventKey="stats" title="Event Statistics">
-          <EventStats />
-        </Tab> */}
       </Tabs>
     </div>
   );
